@@ -770,6 +770,25 @@ pub async fn remove_composite_model(
     Ok(true)
 }
 
+/// 获取所有模型能力配置
+#[tauri::command]
+pub async fn get_model_capabilities(
+) -> Result<Vec<crate::proxy::multimodal_router::ModelCapabilities>, String> {
+    Ok(crate::proxy::multimodal_router::get_model_capabilities()
+        .iter()
+        .cloned()
+        .collect())
+}
+
+/// 按名称获取单个模型能力配置
+#[tauri::command]
+pub async fn get_model_capability_for_name(
+    name: String,
+) -> Result<Option<crate::proxy::multimodal_router::ModelCapabilities>, String> {
+    Ok(crate::proxy::multimodal_router::get_model_capability_for_name(&name)
+        .cloned())
+}
+
 /// 获取日志配置
 #[tauri::command]
 pub async fn get_log_config(

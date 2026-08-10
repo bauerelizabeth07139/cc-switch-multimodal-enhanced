@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +47,6 @@ const emptyConfig = () => ({
 export function MultimodalSettingsPanel() {
   const { t } = useTranslation();
   const [config, setConfig] = useState<MultimodalRoutingConfig>(emptyConfig());
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [providers, setProviders] = useState<Record<string, { id: string; name: string }>>({});
   const [newBinding, setNewBinding] = useState<CompositeModelBinding>(emptyBinding);
@@ -83,40 +81,12 @@ export function MultimodalSettingsPanel() {
             }),
           );
         }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [t]);
-
-  const handleSaveConfig = async (updates: Partial<MultimodalRoutingConfig>) => {
-    const newConfig = { ...config, ...updates };
-    setConfig(newConfig);
-    setIsSaving(true);
-    try {
-      await settingsApi.setMultimodalRoutingConfig(newConfig);
-      toast.success(
-        t("settings.advanced.multimodal.saveSuccess", {
-          defaultValue: "多模态路由配置已保存",
-        }),
-      );
-    } catch (e) {
-      console.error("Failed to save multimodal config:", e);
-      toast.error(
-        t("settings.advanced.multimodal.saveFailed", {
-          defaultValue: "保存多模态配置失败",
-        }),
-      );
-      setConfig(config);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleAddBinding = async () => {
     if (!newBinding.name.trim() || !newBinding.eyes_model || !newBinding.brain_model) {
@@ -185,106 +155,22 @@ export function MultimodalSettingsPanel() {
     [providers],
   );
 
-  if (isLoading) return null;
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="space-y-1">
         <h3 className="text-base font-semibold">
-          {t("settings.advanced.multimodal.title", {
-            defaultValue: "多模态路由",
+          {t("settings.advanced.multimodal.compositeBindings.title", {
+            defaultValue: "组合模型绑定",
           })}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {t("settings.advanced.multimodal.description", {
-            defaultValue: "配置多模态输入的自动路由和组合模型绑定",
+          {t("settings.advanced.multimodal.compositeBindings.description", {
+            defaultValue: "管理多模态眼睛模型与推理大脑模型的绑定",
           })}
         </p>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label>
-              {t("settings.advanced.multimodal.enabled", {
-                defaultValue: "启用多模态自动路由",
-              })}
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              {t("settings.advanced.multimodal.enabledDescription", {
-                defaultValue: "自动将多模态请求路由到支持视觉和推理的模型",
-              })}
-            </p>
-          </div>
-          <Switch
-            checked={config.enabled}
-            onCheckedChange={(checked) =>
-              handleSaveConfig({ enabled: checked })
-            }
-            disabled={isSaving}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>
-              {t("settings.advanced.multimodal.fallbackModel", {
-                defaultValue: "回退模型名称",
-              })}
-            </Label>
-            <Input
-              value={config.fallback_model}
-              onChange={(e) =>
-                setConfig((prev) => ({
-                  ...prev,
-                  fallback_model: e.target.value,
-                }))
-              }
-              onBlur={(e) =>
-                handleSaveConfig({ fallback_model: e.target.value })
-              }
-              placeholder={
-                t("settings.advanced.multimodal.fallbackModelPlaceholder", {
-                  defaultValue: "例: gpt-4o",
-                }) ?? undefined
-              }
-              disabled={isSaving}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>
-              {t("settings.advanced.multimodal.fallbackProvider", {
-                defaultValue: "回退供应商",
-              })}
-            </Label>
-            <Select
-              value={config.fallback_provider_id || undefined}
-              onValueChange={(value) =>
-                handleSaveConfig({ fallback_provider_id: value })
-              }
-              disabled={isSaving || providerOptions.length === 0}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue
-                  placeholder={
-                    t("settings.advanced.multimodal.selectProvider", {
-                      defaultValue: "选择供应商",
-                    }) ?? undefined
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {providerOptions.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="border-t pt-6">
+      <div className="border-t pt-6">
           <div className="space-y-1 mb-4">
             <h4 className="text-sm font-medium">
               {t("settings.advanced.multimodal.compositeBindings.title", {

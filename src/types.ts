@@ -231,6 +231,12 @@ export interface ProviderMeta {
   providerType?: string;
   // GitHub Copilot 关联账号 ID（旧字段，保留兼容读取）
   githubAccountId?: string;
+  // 是否为推理模型
+  isReasoningModel?: boolean;
+  // 推理思考强度（auto/low/medium/high/xhigh）
+  thinkingStrength?: string;
+  // 上下文限制
+  contextLimit?: number;
 }
 
 // Skill 同步方式
@@ -752,4 +758,13 @@ export interface MultimodalRoutingConfig {
   fallback_model: string;
   fallback_provider_id: string;
   composite_bindings: CompositeModelBinding[];
+}
+
+export interface ModelCapability {
+  name: string;
+  modalities: string[];
+  reasoning?: boolean;
+  thinkingStrength?: string[];
+  contextLimit?: number;
+  outputModalities?: string[];
 }

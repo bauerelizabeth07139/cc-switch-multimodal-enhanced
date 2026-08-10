@@ -541,6 +541,15 @@ pub struct ProviderMeta {
     /// 用于多账号支持，关联到特定的 GitHub 账号
     #[serde(rename = "githubAccountId", skip_serializing_if = "Option::is_none")]
     pub github_account_id: Option<String>,
+    /// 是否为推理模型
+    #[serde(rename = "isReasoningModel", skip_serializing_if = "Option::is_none")]
+    pub is_reasoning_model: Option<bool>,
+    /// 推理思考强度（auto/low/medium/high/xhigh）
+    #[serde(rename = "thinkingStrength", skip_serializing_if = "Option::is_none")]
+    pub thinking_strength: Option<String>,
+    /// 上下文限制
+    #[serde(rename = "contextLimit", skip_serializing_if = "Option::is_none")]
+    pub context_limit: Option<u32>,
 }
 
 /// 解析 Provider 级自定义 User-Agent 字符串（单一真理来源）。

@@ -1365,6 +1365,8 @@ pub fn run() {
             commands::list_composite_models,
             commands::add_composite_model,
             commands::remove_composite_model,
+            commands::get_model_capabilities,
+            commands::get_model_capability_for_name,
             commands::get_log_config,
             commands::set_log_config,
             commands::restart_app,

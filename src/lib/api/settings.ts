@@ -8,6 +8,7 @@ import type {
   MultimodalRoutingConfig,
 } from "@/types";
 import type { AppId } from "./types";
+import type { ModelCapability } from "../modelCapabilities";
 
 export interface ConfigTransferResult {
   success: boolean;
@@ -324,6 +325,20 @@ export const settingsApi = {
 
   async removeCompositeModel(name: string): Promise<boolean> {
     return await invoke("remove_composite_model", { name });
+  },
+
+  async getModelCapabilities(): Promise<ModelCapability[]> {
+    return await invoke("get_model_capabilities");
+  },
+
+  async getModelCapabilityForName(
+    name: string,
+  ): Promise<ModelCapability | undefined> {
+    const result = await invoke<ModelCapability | null>(
+      "get_model_capability_for_name",
+      { name },
+    );
+    return result ?? undefined;
   },
 };
 

@@ -53,6 +53,7 @@ import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
 import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
 import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
 import { MultimodalSettingsPanel } from "@/components/settings/MultimodalSettingsPanel";
+import { RoutingTabContent } from "@/components/settings/RoutingTabContent";
 import { useInstalledSkills } from "@/hooks/useSkills";
 import { useSettings } from "@/hooks/useSettings";
 import { useImportExport } from "@/hooks/useImportExport";
@@ -225,13 +226,16 @@ export function SettingsPage({
           onValueChange={setActiveTab}
           className="flex flex-col h-full"
         >
-          <TabsList className="grid w-full grid-cols-6 mb-6 glass rounded-lg">
+          <TabsList className="grid w-full grid-cols-7 mb-6 glass rounded-lg">
             <TabsTrigger value="general">
               {t("settings.tabGeneral")}
             </TabsTrigger>
             <TabsTrigger value="proxy">{t("settings.tabProxy")}</TabsTrigger>
             <TabsTrigger value="auth">
               {t("settings.tabAuth", { defaultValue: "认证" })}
+            </TabsTrigger>
+            <TabsTrigger value="routing">
+              {t("settings.tabRouting", { defaultValue: "路由" })}
             </TabsTrigger>
             <TabsTrigger value="advanced">
               {t("settings.tabAdvanced")}
@@ -311,6 +315,10 @@ export function SettingsPage({
                 >
                   <AuthCenterPanel />
                 </motion.div>
+              </TabsContent>
+
+              <TabsContent value="routing" className="space-y-6 mt-0 pb-4">
+                <RoutingTabContent />
               </TabsContent>
 
               <TabsContent value="advanced" className="space-y-6 mt-0 pb-4">

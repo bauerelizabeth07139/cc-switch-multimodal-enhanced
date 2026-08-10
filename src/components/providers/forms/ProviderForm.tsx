@@ -12,7 +12,12 @@ import {
   buildLocalProxyRequestOverrides,
   formatRequestOverrideObject,
 } from "@/lib/requestOverrides";
-import { providersApi, settingsApi, type AppId } from "@/lib/api";
+import {
+  providersApi,
+  settingsApi,
+  type AppId,
+} from "@/lib/api";
+import { getModelCapability } from "@/lib/modelCapabilities";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import type {
   ProviderCategory,
@@ -85,6 +90,8 @@ import { parseOmoOtherFieldsObject } from "@/types/omo";
 import {
   ProviderAdvancedConfig,
   type PricingModelSourceOption,
+  type ReasoningConfig,
+  type CompositeBindingForm,
 } from "./ProviderAdvancedConfig";
 import {
   useProviderCategory,
@@ -332,6 +339,114 @@ function ProviderFormFull({
     ),
   }));
 
+  const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfig>(() => ({
+    isReasoningModel: initialData?.meta?.isReasoningModel ?? false,
+    thinkingStrength: initialData?.meta?.thinkingStrength ?? "auto",
+    contextLimit:
+      initialData?.meta?.contextLimit !== undefined
+        ? String(initialData?.meta.contextLimit)
+        : "",
+  }));
+
+  const [compositeBinding, setCompositeBinding] =
+    useState<CompositeBindingForm>({
+      name: "",
+      eyes_model: "",
+      eyes_provider_id: "",
+      brain_model: "",
+      brain_provider_id: "",
+    });
+
+  const { data: providersData } = useQuery({
+    queryKey: ["providers", appId],
+    queryFn: () => providersApi.getAll(appId),
+  });
+
+  const providers: Record<string, { id: string; name: string }> = useMemo(
+    () => {
+      if (!providersData) return {};
+      return Object.fromEntries(
+        Object.entries(providersData).map(([id, provider]) => [
+          id,
+          { id, name: provider.name },
+        ]),
+      );
+    },
+    [providersData],
+  );
+
+  const currentModel = useMemo(() => {
+    if (appId === "claude") return claudeModel;
+    if (appId === "codex") return codexModel;
+    if (appId === "gemini") return geminiModel;
+    if (appId === "opencode") {
+      const keys = Object.keys(opencodeForm.opencodeModels);
+      return keys.length > 0 ? keys[0] : "";
+    }
+    if (appId === "openclaw") {
+      return openclawForm.openclawModels.length > 0
+        ? openclawForm.openclawModels[0].id
+        : "";
+    }
+    if (appId === "hermes") {
+      return hermesForm.hermesModels.length > 0
+        ? hermesForm.hermesModels[0].id
+        : "";
+    }
+    return "";
+  }, [
+    appId,
+    claudeModel,
+    codexModel,
+    geminiModel,
+    opencodeForm.opencodeModels,
+    openclawForm.openclawModels,
+    hermesForm.hermesModels,
+  ]);
+
+  const modelCapability = currentModel
+    ? getModelCapability(currentModel)
+    : undefined;
+
+  const handleAddCompositeBinding = async () => {
+    if (!compositeBinding.name.trim() || !compositeBinding.eyes_model || !compositeBinding.brain_model) {
+      toast.error(
+        t("providerAdvanced.fillRequired", {
+          defaultValue: "请填写所有必填字段",
+        }),
+      );
+      return;
+    }
+    try {
+      await settingsApi.addCompositeModel({
+        name: compositeBinding.name.trim(),
+        eyes_model: compositeBinding.eyes_model,
+        eyes_provider_id: compositeBinding.eyes_provider_id,
+        brain_model: compositeBinding.brain_model,
+        brain_provider_id: compositeBinding.brain_provider_id,
+      });
+      toast.success(
+        t("providerAdvanced.bindingAdded", {
+          defaultValue: "组合模型绑定已添加",
+        }),
+      );
+      setCompositeBinding({
+        name: "",
+        eyes_model: "",
+        eyes_provider_id: "",
+        brain_model: "",
+        brain_provider_id: "",
+      });
+    } catch (e) {
+      console.error("Failed to add composite binding:", e);
+      toast.error(
+        t("providerAdvanced.bindingAddFailed", {
+          defaultValue: "添加绑定失败",
+        }),
+      );
+    }
+  };
+
   const { category } = useProviderCategory({
     appId,
     selectedPresetId,
@@ -375,6 +490,21 @@ function ProviderFormFull({
         initialData?.meta?.localProxyRequestOverrides?.body,
       ),
     );
+    setReasoningConfig({
+      isReasoningModel: initialData?.meta?.isReasoningModel ?? false,
+      thinkingStrength: initialData?.meta?.thinkingStrength ?? "auto",
+      contextLimit:
+        initialData?.meta?.contextLimit !== undefined
+          ? String(initialData?.meta.contextLimit)
+          : "",
+    });
+    setCompositeBinding({
+      name: "",
+      eyes_model: "",
+      eyes_provider_id: "",
+      brain_model: "",
+      brain_provider_id: "",
+    });
   }, [appId, initialData, supportsFullUrl]);
 
   const defaultValues: ProviderFormData = useMemo(
@@ -1609,6 +1739,13 @@ function ProviderFormFull({
         pricingConfig.enabled && pricingConfig.pricingModelSource !== "inherit"
           ? pricingConfig.pricingModelSource
           : undefined,
+      isReasoningModel: reasoningConfig.isReasoningModel,
+      thinkingStrength: reasoningConfig.thinkingStrength !== "auto"
+        ? reasoningConfig.thinkingStrength
+        : undefined,
+      contextLimit: reasoningConfig.contextLimit
+        ? Number.parseInt(reasoningConfig.contextLimit, 10)
+        : undefined,
       apiFormat:
         appId === "claude" && category !== "official"
           ? isXaiOauthProvider
@@ -2602,6 +2739,14 @@ function ProviderFormFull({
               <ProviderAdvancedConfig
                 pricingConfig={pricingConfig}
                 onPricingConfigChange={setPricingConfig}
+                reasoningConfig={reasoningConfig}
+                onReasoningConfigChange={setReasoningConfig}
+                compositeBinding={compositeBinding}
+                onCompositeBindingChange={setCompositeBinding}
+                onAddCompositeBinding={handleAddCompositeBinding}
+                providers={providers}
+                modelName={currentModel}
+                modelCapability={modelCapability}
               />
             )}
 

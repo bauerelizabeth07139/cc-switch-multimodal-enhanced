@@ -2,37 +2,265 @@ use crate::app_config::AppType;
 use crate::provider::Provider;
 use crate::proxy::error::ProxyError;
 use axum::http::HeaderMap;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-/// Known multimodal models mapped by lowercase tail pattern to supported modalities.
-static KNOWN_MULTIMODAL_MODELS: &[(&str, &[&str])] = &[
-    ("gpt-4o", &["text", "image"]),
-    ("gpt-4o-mini", &["text", "image"]),
-    ("gpt-4-turbo", &["text", "image"]),
-    ("claude-opus-4", &["text", "image"]),
-    ("claude-sonnet-4", &["text", "image"]),
-    ("claude-3.5-sonnet", &["text", "image"]),
-    ("claude-3.5-haiku", &["text", "image"]),
-    ("gemini-2.5-pro", &["text", "image", "audio", "video"]),
-    ("gemini-2.5-flash", &["text", "image", "audio", "video"]),
-    ("gemini-1.5-pro", &["text", "image", "audio", "video"]),
-    ("gemini-1.5-flash", &["text", "image", "audio", "video"]),
-    ("step-3.7-flash", &["text", "image", "audio", "video"]),
+/// Model capability entry in the dictionary.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelCapabilities {
+    /// Normalized model name tail (lowercase)
+    pub name: String,
+    /// Supported input modalities
+    pub modalities: Vec<String>,
+    /// Whether the model supports reasoning
+    pub reasoning: bool,
+    /// Thinking strength levels supported
+    pub thinking_strength: Vec<String>,
+    /// Context limit in tokens
+    pub context_limit: u32,
+    /// Output modalities (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_modalities: Option<Vec<String>>,
+}
+
+/// Comprehensive model capability dictionary keyed by normalized name tail (lowercase).
+static MODEL_CAPABILITIES: &[ModelCapabilities] = &[
+    ModelCapabilities {
+        name: "step-3.7-flash".to_string(),
+        modalities: vec![
+            "text".to_string(),
+            "image".to_string(),
+            "audio".to_string(),
+            "video".to_string(),
+        ],
+        reasoning: true,
+        thinking_strength: vec![
+            "low".to_string(),
+            "medium".to_string(),
+            "high".to_string(),
+            "xhigh".to_string(),
+        ],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gpt-4o".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gpt-4o-mini".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gpt-4-turbo".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "claude-opus-4".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 200000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "claude-sonnet-4".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 200000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "claude-3.5-sonnet".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 200000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "claude-3.5-haiku".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 200000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gemini-2.5-pro".to_string(),
+        modalities: vec![
+            "text".to_string(),
+            "image".to_string(),
+            "audio".to_string(),
+            "video".to_string(),
+        ],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 1000000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gemini-2.5-flash".to_string(),
+        modalities: vec![
+            "text".to_string(),
+            "image".to_string(),
+            "audio".to_string(),
+            "video".to_string(),
+        ],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 1000000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gemini-1.5-pro".to_string(),
+        modalities: vec![
+            "text".to_string(),
+            "image".to_string(),
+            "audio".to_string(),
+            "video".to_string(),
+        ],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 1000000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "gemini-1.5-flash".to_string(),
+        modalities: vec![
+            "text".to_string(),
+            "image".to_string(),
+            "audio".to_string(),
+            "video".to_string(),
+        ],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 1000000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "deepseek-chat".to_string(),
+        modalities: vec!["text".to_string()],
+        reasoning: true,
+        thinking_strength: vec![
+            "low".to_string(),
+            "medium".to_string(),
+            "high".to_string(),
+        ],
+        context_limit: 64000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "deepseek-reasoner".to_string(),
+        modalities: vec!["text".to_string()],
+        reasoning: true,
+        thinking_strength: vec![
+            "low".to_string(),
+            "medium".to_string(),
+            "high".to_string(),
+        ],
+        context_limit: 64000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "qwen3-coder-480b".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: true,
+        thinking_strength: vec![
+            "low".to_string(),
+            "medium".to_string(),
+            "high".to_string(),
+        ],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "qwen3-coder-plus".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: true,
+        thinking_strength: vec![
+            "low".to_string(),
+            "medium".to_string(),
+            "high".to_string(),
+        ],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "qwen3-coder-flash".to_string(),
+        modalities: vec!["text".to_string(), "image".to_string()],
+        reasoning: true,
+        thinking_strength: vec![
+            "low".to_string(),
+            "medium".to_string(),
+            "high".to_string(),
+        ],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "glm-5.2".to_string(),
+        modalities: vec!["text".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 128000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "minimax-m2.7".to_string(),
+        modalities: vec!["text".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 1000000,
+        output_modalities: None,
+    },
+    ModelCapabilities {
+        name: "step-3.5-flash".to_string(),
+        modalities: vec!["text".to_string()],
+        reasoning: false,
+        thinking_strength: vec![],
+        context_limit: 128000,
+        output_modalities: None,
+    },
 ];
+
+/// Returns the full model capability dictionary.
+pub fn get_model_capabilities() -> &'static [ModelCapabilities] {
+    MODEL_CAPABILITIES
+}
+
+/// Looks up capabilities for a model by normalized name/tail.
+pub fn get_model_capability_for_name(model_name: &str) -> Option<&'static ModelCapabilities> {
+    let normalized = model_name.to_lowercase();
+    let tail = normalized.rsplit('/').next().unwrap_or(&normalized);
+
+    MODEL_CAPABILITIES.iter().find(|cap| {
+        let pattern = cap.name.to_lowercase();
+        tail == pattern.as_str() || normalized.contains(pattern.as_str())
+    })
+}
 
 /// Check if a model name matches a known multimodal model.
 ///
 /// Uses case-insensitive substring matching on the model name tail (after the last `/`).
 pub fn is_model_multimodal(model_name: &str) -> bool {
-    let normalized = model_name.to_lowercase();
-    let tail = normalized.rsplit('/').next().unwrap_or(&normalized);
-
-    KNOWN_MULTIMODAL_MODELS
-        .iter()
-        .any(|(pattern, _)| {
-            let pattern_lower = pattern.to_lowercase();
-            tail == pattern_lower.as_str() || normalized.contains(pattern_lower.as_str())
-        })
+    get_model_capability_for_name(model_name)
+        .map(|cap| cap.modalities.iter().any(|m| m == "image"))
+        .unwrap_or(false)
 }
 
 /// Check if a provider has any model in its catalog that supports images.

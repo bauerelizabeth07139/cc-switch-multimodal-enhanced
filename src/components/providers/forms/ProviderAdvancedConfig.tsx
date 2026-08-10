@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Coins } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { ChevronDown, ChevronRight, Coins, Brain, Link2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -11,7 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { ModelCapability } from "@/lib/modelCapabilities";
 export type PricingModelSourceOption = "inherit" | "request" | "response";
 
 interface ProviderPricingConfig {
@@ -20,23 +22,91 @@ interface ProviderPricingConfig {
   pricingModelSource: PricingModelSourceOption;
 }
 
+export interface ReasoningConfig {
+  isReasoningModel: boolean;
+  thinkingStrength: string;
+  contextLimit: string;
+}
+
+export interface CompositeBindingForm {
+  name: string;
+  eyes_model: string;
+  eyes_provider_id: string;
+  brain_model: string;
+  brain_provider_id: string;
+}
+
 interface ProviderAdvancedConfigProps {
   pricingConfig: ProviderPricingConfig;
   onPricingConfigChange: (config: ProviderPricingConfig) => void;
+  reasoningConfig: ReasoningConfig;
+  onReasoningConfigChange: (config: ReasoningConfig) => void;
+  compositeBinding: CompositeBindingForm;
+  onCompositeBindingChange: (binding: CompositeBindingForm) => void;
+  onAddCompositeBinding: () => void;
+  providers: Record<string, { id: string; name: string }>;
+  modelName: string;
+  modelCapability?: ModelCapability;
 }
+
+const THINKING_STRENGTH_OPTIONS = [
+  { value: "auto", labelKey: "providerAdvanced.thinkingStrengthAuto", defaultLabel: "自动" },
+  { value: "low", labelKey: "providerAdvanced.thinkingStrengthLow", defaultLabel: "低" },
+  { value: "medium", labelKey: "providerAdvanced.thinkingStrengthMedium", defaultLabel: "中" },
+  { value: "high", labelKey: "providerAdvanced.thinkingStrengthHigh", defaultLabel: "高" },
+  { value: "xhigh", labelKey: "providerAdvanced.thinkingStrengthXhigh", defaultLabel: "超高" },
+];
 
 export function ProviderAdvancedConfig({
   pricingConfig,
   onPricingConfigChange,
+  reasoningConfig,
+  onReasoningConfigChange,
+  compositeBinding,
+  onCompositeBindingChange,
+  onAddCompositeBinding,
+  providers,
+  modelName,
+  modelCapability,
 }: ProviderAdvancedConfigProps) {
   const { t } = useTranslation();
   const [isPricingConfigOpen, setIsPricingConfigOpen] = useState(
     pricingConfig.enabled,
   );
+  const [isReasoningConfigOpen, setIsReasoningConfigOpen] = useState(
+    reasoningConfig.isReasoningModel,
+  );
+  const [isCompositeBindingOpen, setIsCompositeBindingOpen] =
+    useState(false);
 
   useEffect(() => {
     setIsPricingConfigOpen(pricingConfig.enabled);
   }, [pricingConfig.enabled]);
+
+  useEffect(() => {
+    setIsReasoningConfigOpen(reasoningConfig.isReasoningModel);
+  }, [reasoningConfig.isReasoningModel]);
+
+  const effectiveThinkingStrengthOptions = useMemo(() => {
+    if (!modelCapability?.thinkingStrength || modelCapability.thinkingStrength.length === 0) {
+      return THINKING_STRENGTH_OPTIONS;
+    }
+    const allowed = new Set(modelCapability.thinkingStrength);
+    return THINKING_STRENGTH_OPTIONS.filter((opt) => {
+      if (opt.value === "auto") return true;
+      return allowed.has(opt.value);
+    });
+  }, [modelCapability]);
+
+  const showThinkingStrengthHint =
+    modelCapability?.thinkingStrength &&
+    modelCapability.thinkingStrength.length > 0 &&
+    !modelCapability.thinkingStrength.includes(reasoningConfig.thinkingStrength);
+
+  const contextLimitFromCapability = modelCapability?.contextLimit;
+  const contextLimitIsDefault =
+    contextLimitFromCapability !== undefined &&
+    reasoningConfig.contextLimit === String(contextLimitFromCapability);
 
   return (
     <div className="space-y-4">
@@ -174,6 +244,348 @@ export function ProviderAdvancedConfig({
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 推理模型配置 */}
+      <div className="rounded-lg border border-border/50 bg-muted/20">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+          onClick={() => setIsReasoningConfigOpen(!isReasoningConfigOpen)}
+        >
+          <div className="flex items-center gap-3">
+            <Brain className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">
+              {t("providerAdvanced.reasoningConfig", {
+                defaultValue: "推理模型配置",
+              })}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Label
+                htmlFor="reasoning-model-enabled"
+                className="text-sm text-muted-foreground"
+              >
+                {t("providerAdvanced.reasoningModel", {
+                  defaultValue: "推理模型",
+                })}
+              </Label>
+              <Switch
+                id="reasoning-model-enabled"
+                checked={reasoningConfig.isReasoningModel}
+                onCheckedChange={(checked) => {
+                  onReasoningConfigChange({
+                    ...reasoningConfig,
+                    isReasoningModel: checked,
+                  });
+                  if (checked) setIsReasoningConfigOpen(true);
+                }}
+              />
+            </div>
+            {isReasoningConfigOpen ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-200",
+            isReasoningConfigOpen
+              ? "max-h-[500px] opacity-100"
+              : "max-h-0 opacity-0",
+          )}
+        >
+          <div className="border-t border-border/50 p-4 space-y-4">
+            {modelCapability?.reasoning && !reasoningConfig.isReasoningModel && (
+              <p className="text-xs text-muted-foreground">
+                {t("providerAdvanced.reasoningModelHint", {
+                  defaultValue:
+                    "当前模型支持推理能力，建议启用推理模型选项。",
+                })}
+              </p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="thinking-strength">
+                  {t("providerAdvanced.thinkingStrength", {
+                    defaultValue: "思考强度",
+                  })}
+                </Label>
+                <Select
+                  value={reasoningConfig.thinkingStrength}
+                  onValueChange={(value) =>
+                    onReasoningConfigChange({
+                      ...reasoningConfig,
+                      thinkingStrength: value,
+                    })
+                  }
+                  disabled={!reasoningConfig.isReasoningModel}
+                >
+                  <SelectTrigger id="thinking-strength">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {effectiveThinkingStrengthOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey, { defaultValue: opt.defaultLabel })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {showThinkingStrengthHint && (
+                  <p className="text-xs text-destructive">
+                    {t("providerAdvanced.thinkingStrengthNotRecommended", {
+                      defaultValue:
+                        "当前模型推荐思考强度：{{strengths}}",
+                      strengths: modelCapability.thinkingStrength?.join(", "),
+                    })}
+                  </p>
+                )}
+                {modelCapability?.thinkingStrength &&
+                  modelCapability.thinkingStrength.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("providerAdvanced.thinkingStrengthAvailable", {
+                        defaultValue:
+                          "可用强度：{{strengths}}",
+                        strengths: modelCapability.thinkingStrength.join(", "),
+                      })}
+                    </p>
+                  )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="context-limit">
+                  {t("providerAdvanced.contextLimit", {
+                    defaultValue: "上下文限制",
+                  })}
+                </Label>
+                <Input
+                  id="context-limit"
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={reasoningConfig.contextLimit}
+                  onChange={(e) =>
+                    onReasoningConfigChange({
+                      ...reasoningConfig,
+                      contextLimit: e.target.value,
+                    })
+                  }
+                  placeholder={
+                    contextLimitFromCapability
+                      ? String(contextLimitFromCapability)
+                      : t("providerAdvanced.contextLimitPlaceholder", {
+                          defaultValue: "留空使用模型默认值",
+                        })
+                  }
+                  disabled={!reasoningConfig.isReasoningModel}
+                />
+                {contextLimitFromCapability && (
+                  <p className="text-xs text-muted-foreground">
+                    {contextLimitIsDefault
+                      ? t("providerAdvanced.contextLimitDefault", {
+                          defaultValue: "模型默认：{{limit}}",
+                          limit: contextLimitFromCapability,
+                        })
+                      : t("providerAdvanced.contextLimitModelDefault", {
+                          defaultValue: "模型推荐：{{limit}}",
+                          limit: contextLimitFromCapability,
+                        })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 组合模型绑定 */}
+      <div className="rounded-lg border border-border/50 bg-muted/20">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+          onClick={() => setIsCompositeBindingOpen(!isCompositeBindingOpen)}
+        >
+          <div className="flex items-center gap-3">
+            <Link2 className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">
+              {t("providerAdvanced.compositeBinding", {
+                defaultValue: "组合模型绑定",
+              })}
+            </span>
+          </div>
+          {isCompositeBindingOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-200",
+            isCompositeBindingOpen
+              ? "max-h-[600px] opacity-100"
+              : "max-h-0 opacity-0",
+          )}
+        >
+          <div className="border-t border-border/50 p-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t("providerAdvanced.compositeBindingDesc", {
+                defaultValue:
+                  "创建组合模型绑定，将视觉模型（eyes）与推理模型（brain）绑定在一起。",
+              })}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="binding-name">
+                  {t("providerAdvanced.bindingName", {
+                    defaultValue: "绑定名称",
+                  })}
+                  <span className="text-destructive ml-1">*</span>
+                </Label>
+                <Input
+                  id="binding-name"
+                  value={compositeBinding.name}
+                  onChange={(e) =>
+                    onCompositeBindingChange({
+                      ...compositeBinding,
+                      name: e.target.value,
+                    })
+                  }
+                  placeholder={t("providerAdvanced.bindingNamePlaceholder", {
+                    defaultValue: "例如: my-binding",
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eyes-model">
+                  {t("providerAdvanced.eyesModel", {
+                    defaultValue: "视觉模型 (Eyes)",
+                  })}
+                </Label>
+                <Input
+                  id="eyes-model"
+                  value={compositeBinding.eyes_model}
+                  onChange={(e) =>
+                    onCompositeBindingChange({
+                      ...compositeBinding,
+                      eyes_model: e.target.value,
+                    })
+                  }
+                  placeholder={t("providerAdvanced.eyesModelPlaceholder", {
+                    defaultValue: "例如: gpt-4o",
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eyes-provider">
+                  {t("providerAdvanced.eyesProvider", {
+                    defaultValue: "视觉供应商 (Eyes Provider)",
+                  })}
+                </Label>
+                <Select
+                  value={compositeBinding.eyes_provider_id}
+                  onValueChange={(value) =>
+                    onCompositeBindingChange({
+                      ...compositeBinding,
+                      eyes_provider_id: value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="eyes-provider">
+                    <SelectValue
+                      placeholder={t("providerAdvanced.selectProvider", {
+                        defaultValue: "选择供应商",
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      {t("providerAdvanced.noProvider", {
+                        defaultValue: "无",
+                      })}
+                    </SelectItem>
+                    {Object.values(providers).map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brain-model">
+                  {t("providerAdvanced.brainModel", {
+                    defaultValue: "推理模型 (Brain)",
+                  })}
+                </Label>
+                <Input
+                  id="brain-model"
+                  value={compositeBinding.brain_model}
+                  onChange={(e) =>
+                    onCompositeBindingChange({
+                      ...compositeBinding,
+                      brain_model: e.target.value,
+                    })
+                  }
+                  placeholder={t("providerAdvanced.brainModelPlaceholder", {
+                    defaultValue: "例如: deepseek-reasoner",
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brain-provider">
+                  {t("providerAdvanced.brainProvider", {
+                    defaultValue: "推理供应商 (Brain Provider)",
+                  })}
+                </Label>
+                <Select
+                  value={compositeBinding.brain_provider_id}
+                  onValueChange={(value) =>
+                    onCompositeBindingChange({
+                      ...compositeBinding,
+                      brain_provider_id: value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="brain-provider">
+                    <SelectValue
+                      placeholder={t("providerAdvanced.selectProvider", {
+                        defaultValue: "选择供应商",
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      {t("providerAdvanced.noProvider", {
+                        defaultValue: "无",
+                      })}
+                    </SelectItem>
+                    {Object.values(providers).map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={onAddCompositeBinding}
+              className="w-full md:w-auto"
+            >
+              {t("providerAdvanced.addBinding", {
+                defaultValue: "添加绑定",
+              })}
+            </Button>
           </div>
         </div>
       </div>

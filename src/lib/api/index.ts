@@ -6,7 +6,7 @@ export type {
   CompositeModelBinding,
   MultimodalRoutingConfig,
 } from "./settings";
-export { mcpApi } from "./mcp";
+export type { ModelCapability } from "../lib/modelCapabilities";
 export { profilesApi } from "./profiles";
 export { promptsApi } from "./prompts";
 export { skillsApi } from "./skills";
