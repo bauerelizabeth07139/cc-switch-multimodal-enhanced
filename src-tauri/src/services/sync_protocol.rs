@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tempfile::tempdir;
 
+use crate::commands::misc::decode_command_output;
 use crate::error::AppError;
 
 // Re-export archive functions for use by transport layers.
@@ -361,7 +362,7 @@ pub(crate) fn detect_system_device_name() -> Option<String> {
     if !output.status.success() {
         return None;
     }
-    let hostname = String::from_utf8(output.stdout).ok()?;
+    let hostname = decode_command_output(&output.stdout);
     normalize_device_name(&hostname)
 }
 

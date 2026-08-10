@@ -2025,11 +2025,21 @@ fn initialize_common_config_snippets(state: &store::AppState) {
 
 /// 检测是否为中文环境
 fn is_chinese_locale() -> bool {
-    std::env::var("LANG")
-        .or_else(|_| std::env::var("LC_ALL"))
-        .or_else(|_| std::env::var("LC_MESSAGES"))
-        .map(|lang| lang.starts_with("zh"))
-        .unwrap_or(false)
+    #[cfg(target_os = "windows")]
+    {
+        use windows_sys::Win32::Globalization::GetUserDefaultUILanguage;
+        let lang_id = unsafe { GetUserDefaultUILanguage() };
+        let primary_lang = lang_id & 0x3FF;
+        primary_lang == 0x04 || primary_lang == 0x0C
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::env::var("LANG")
+            .or_else(|_| std::env::var("LC_ALL"))
+            .or_else(|_| std::env::var("LC_MESSAGES"))
+            .map(|lang| lang.starts_with("zh"))
+            .unwrap_or(false)
+    }
 }
 
 /// 显示迁移错误对话框

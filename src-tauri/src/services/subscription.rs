@@ -8,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::collections::HashMap;
 
+use crate::commands::misc::decode_command_output;
 use crate::config;
 
 // ── 数据类型 ──────────────────────────────────────────────
@@ -144,7 +145,7 @@ fn read_claude_credentials_from_keychain(
         return None; // Keychain 中无此条目，回退到文件
     }
 
-    let json_str = String::from_utf8(output.stdout).ok()?;
+    let json_str = decode_command_output(&output.stdout);
     let json_str = json_str.trim();
     if json_str.is_empty() {
         return None;
@@ -510,7 +511,7 @@ fn read_codex_credentials_from_keychain() -> Option<CodexCredentials> {
         return None;
     }
 
-    let json_str = String::from_utf8(output.stdout).ok()?;
+    let json_str = decode_command_output(&output.stdout);
     let json_str = json_str.trim();
     if json_str.is_empty() {
         return None;
@@ -821,7 +822,7 @@ fn read_gemini_credentials_from_keychain() -> Option<GeminiCredentials> {
         return None;
     }
 
-    let json_str = String::from_utf8(output.stdout).ok()?;
+    let json_str = decode_command_output(&output.stdout);
     let json_str = json_str.trim();
     if json_str.is_empty() {
         return None;
