@@ -3,7 +3,7 @@ use crate::provider::Provider;
 use crate::proxy::error::ProxyError;
 use axum::http::HeaderMap;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 /// Model capability entry in the dictionary.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -417,10 +417,10 @@ pub async fn execute_eyes_inference(
 
     // Determine endpoint based on app type
     let endpoint = match app_type {
-        AppType::Claude | AppType::ClaudeDesktop => "/v1/messages",
-        AppType::Codex | AppType::GrokBuild => "/v1/chat/completions",
-        AppType::Gemini => "/v1beta/models/{model}:generateContent",
-        _ => "/v1/chat/completions",
+        AppType::Claude | AppType::ClaudeDesktop => "/v1/messages".to_string(),
+        AppType::Codex | AppType::GrokBuild => "/v1/chat/completions".to_string(),
+        AppType::Gemini => format!("/v1beta/models/{eyes_model}:generateContent"),
+        _ => "/v1/chat/completions".to_string(),
     };
 
     // Gemini uses a dedicated generateContent endpoint with the model embedded
@@ -687,6 +687,7 @@ fn is_image_part(part: &Value) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn test_is_model_multimodal() {

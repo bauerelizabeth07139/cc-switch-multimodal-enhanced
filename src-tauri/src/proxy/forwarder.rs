@@ -238,9 +238,10 @@ impl RequestForwarder {
             .get("model")
             .and_then(Value::as_str)
             .map(str::trim)
-            .unwrap_or("");
+            .unwrap_or("")
+            .to_string();
 
-        if model.is_empty() || is_model_multimodal(model) {
+        if model.is_empty() || is_model_multimodal(&model) {
             return false;
         }
 
@@ -248,7 +249,7 @@ impl RequestForwarder {
         let text_only = providers.iter().any(|provider| {
             image_input_capability_from_settings(
                 &provider.settings_config,
-                model,
+                &model,
                 true, // use_confirmed_registry
             ) == ImageInputCapability::Unsupported
         });
