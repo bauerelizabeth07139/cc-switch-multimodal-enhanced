@@ -375,39 +375,6 @@ function ProviderFormFull({
     [providersData],
   );
 
-  const currentModel = useMemo(() => {
-    if (appId === "claude") return claudeModel;
-    if (appId === "codex") return codexModel;
-    if (appId === "gemini") return geminiModel;
-    if (appId === "opencode") {
-      const keys = Object.keys(opencodeForm.opencodeModels);
-      return keys.length > 0 ? keys[0] : "";
-    }
-    if (appId === "openclaw") {
-      return openclawForm.openclawModels.length > 0
-        ? openclawForm.openclawModels[0].id
-        : "";
-    }
-    if (appId === "hermes") {
-      return hermesForm.hermesModels.length > 0
-        ? hermesForm.hermesModels[0].id
-        : "";
-    }
-    return "";
-  }, [
-    appId,
-    claudeModel,
-    codexModel,
-    geminiModel,
-    opencodeForm.opencodeModels,
-    openclawForm.openclawModels,
-    hermesForm.hermesModels,
-  ]);
-
-  const modelCapability = currentModel
-    ? getModelCapability(currentModel)
-    : undefined;
-
   const handleAddCompositeBinding = async () => {
     if (!compositeBinding.name.trim() || !compositeBinding.eyes_model || !compositeBinding.brain_model) {
       toast.error(
@@ -926,6 +893,17 @@ function ProviderFormFull({
   } = useGeminiConfigState({
     initialData: appId === "gemini" ? initialData : undefined,
   });
+
+  const currentModel = useMemo(() => {
+    if (appId === "claude") return claudeModel;
+    if (appId === "codex") return codexModel;
+    if (appId === "gemini") return geminiModel;
+    return "";
+  }, [appId, claudeModel, codexModel, geminiModel]);
+
+  const modelCapability = currentModel
+    ? getModelCapability(currentModel)
+    : undefined;
 
   const updateGeminiEnvField = useCallback(
     (

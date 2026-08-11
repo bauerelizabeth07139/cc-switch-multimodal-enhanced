@@ -5,8 +5,8 @@ export { backupsApi } from "./settings";
 export type {
   CompositeModelBinding,
   MultimodalRoutingConfig,
-} from "./settings";
-export type { ModelCapability } from "../lib/modelCapabilities";
+} from "@/types";
+export type { ModelCapability } from "@/lib/modelCapabilities";
 export { profilesApi } from "./profiles";
 export { promptsApi } from "./prompts";
 export { skillsApi } from "./skills";

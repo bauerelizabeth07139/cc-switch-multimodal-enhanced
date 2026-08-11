@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -411,7 +411,6 @@ export function MultimodalSettingsPanel() {
               </div>
             </div>
           )}
-        </div>
       </div>
     </div>
   );

@@ -143,6 +143,21 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
+      - name: Check frontend build (diagnostic)
+        shell: bash
+        run: |
+          set +e
+          pnpm run build:renderer 2>&1 | tee /tmp/frontend-build.log
+          FRONTEND_EXIT=$?
+          echo "=== Frontend build exit code: $FRONTEND_EXIT ==="
+          echo "=== Frontend build log (last 100 lines) ==="
+          tail -100 /tmp/frontend-build.log
+          if [ $FRONTEND_EXIT -ne 0 ]; then
+            echo "❌ Frontend build failed with exit code $FRONTEND_EXIT"
+            exit 1
+          fi
+          echo "✅ Frontend build passed"
+
       - name: Prepare Tauri signing key
         shell: bash
         run: |
@@ -251,8 +266,8 @@ jobs:
             echo "🔐 Signing identity available: $APPLE_SIGNING_IDENTITY"
             BUILD_CMD="pnpm tauri build --target universal-apple-darwin"
           else
-            echo "⚠️ No signing identity — building unsigned"
-            BUILD_CMD="pnpm tauri build --target universal-apple-darwin --no-sign"
+            echo "⚠️ No signing identity — building unsigned (updater artifacts already disabled)"
+            BUILD_CMD="pnpm tauri build --target universal-apple-darwin"
           fi
           max_attempts=3
           for attempt in $(seq 1 "$max_attempts"); do

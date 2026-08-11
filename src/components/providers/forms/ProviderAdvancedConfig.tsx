@@ -66,7 +66,6 @@ export function ProviderAdvancedConfig({
   onCompositeBindingChange,
   onAddCompositeBinding,
   providers,
-  modelName,
   modelCapability,
 }: ProviderAdvancedConfigProps) {
   const { t } = useTranslation();
