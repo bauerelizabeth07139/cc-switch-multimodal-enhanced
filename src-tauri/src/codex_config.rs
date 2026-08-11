@@ -1,7 +1,7 @@
-use std::collections::HashSet;
+﻿use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use crate::commands::misc::decode_command_output;
+use crate::commands::decode_command_output;
 use crate::config::{
     atomic_write, delete_file, get_home_dir, path_is_within, read_json_file,
     sanitize_provider_name, write_json_file, write_text_file,

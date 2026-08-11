@@ -52,7 +52,6 @@ import { UsageDashboard } from "@/components/usage/UsageDashboard";
 import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
 import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
 import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
-import { MultimodalSettingsPanel } from "@/components/settings/MultimodalSettingsPanel";
 import { RoutingTabContent } from "@/components/settings/RoutingTabContent";
 import { useInstalledSkills } from "@/hooks/useSkills";
 import { useSettings } from "@/hooks/useSettings";
@@ -507,38 +506,6 @@ export function SettingsPage({
                         </AccordionTrigger>
                         <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
                           <LogConfigPanel />
-                        </AccordionContent>
-                      </AccordionItem>
-
-                      <AccordionItem
-                        value="multimodal"
-                        className="rounded-xl glass-card overflow-hidden"
-                      >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-500/10 text-purple-500">
-                              <span className="text-xs font-bold">MM</span>
-                            </div>
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.multimodal.title", {
-                                  defaultValue: "多模态路由",
-                                })}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t(
-                                  "settings.advanced.multimodal.description",
-                                  {
-                                    defaultValue:
-                                      "配置多模态输入的自动路由和组合模型绑定",
-                                  },
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <MultimodalSettingsPanel />
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>

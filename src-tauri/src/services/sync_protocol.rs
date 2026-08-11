@@ -1,4 +1,4 @@
-//! Transport-agnostic sync protocol layer.
+﻿//! Transport-agnostic sync protocol layer.
 //!
 //! Shared by WebDAV, S3, and future transports. Artifact set: `db.sql` + `skills.zip`.
 
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tempfile::tempdir;
 
-use crate::commands::misc::decode_command_output;
+use crate::commands::decode_command_output;
 use crate::error::AppError;
 
 // Re-export archive functions for use by transport layers.

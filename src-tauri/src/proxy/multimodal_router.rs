@@ -313,7 +313,7 @@ fn model_supports_image(model: &Value) -> bool {
 fn provider_has_multimodal_model_matching(provider: &Provider, model: &str) -> bool {
     let settings = &provider.settings_config;
     let model_lower = model.to_lowercase();
-    let model_tail = model_lower.rsplit('/').next().unwrap_or(&model_lower);
+    let _model_tail = model_lower.rsplit('/').next().unwrap_or(&model_lower);
 
     // Check modelCatalog.models array
     if let Some(models) = settings
@@ -431,7 +431,7 @@ pub async fn execute_eyes_inference(
         endpoint.to_string()
     };
 
-    let url = adapter.build_url(&effective_base_url, endpoint);
+    let url = adapter.build_url(&effective_base_url, &endpoint);
 
     // Extract auth from provider
     let auth = adapter
@@ -494,7 +494,7 @@ pub async fn execute_eyes_inference(
         .await
         .map_err(|e| ProxyError::ForwardFailed(format!("Failed to read eyes response: {e}")))?;
 
-    if !status.is_success() {
+    if !(200..300).contains(&status) {
         return Err(ProxyError::UpstreamError {
             status,
             body: Some(response_body),
@@ -568,15 +568,7 @@ fn extract_text_from_response(response: &Value) -> Option<String> {
 
 /// Replace all image blocks in the body with the given text.
 fn replace_images_with_text(body: &mut Value, text: &str) {
-    use crate::proxy::media_sanitizer::{
-        gemini_contents_have_image_blocks, messages_have_image_blocks,
-        responses_input_has_image_blocks,
-    };
-
-    if !messages_have_image_blocks(body)
-        && !responses_input_has_image_blocks(body.get("input"))
-        && !gemini_contents_have_image_blocks(body)
-    {
+    if !crate::proxy::media_sanitizer::contains_image_blocks(body) {
         return;
     }
 
@@ -631,8 +623,11 @@ fn replace_images_in_content(content: &mut Value, text: &str) {
     };
 
     for block in blocks.iter_mut() {
-        let block_type = block.get("type").and_then(|t| t.as_str());
-        if is_image_block_type(block_type) {
+        let block_type = block
+            .get("type")
+            .and_then(|t| t.as_str())
+            .map(str::to_string);
+        if is_image_block_type(block_type.as_deref()) {
             *block = Value::Object({
                 let mut obj = serde_json::Map::new();
                     obj.insert("type".to_string(), Value::String("text".to_string()));
@@ -648,7 +643,7 @@ fn replace_images_in_content(content: &mut Value, text: &str) {
         }
 
         // Handle tool_result content
-        if block_type == Some("tool_result") || block_type == Some("tool_use") {
+        if block_type.as_deref() == Some("tool_result") || block_type.as_deref() == Some("tool_use") {
             if let Some(nested) = block.get_mut("input") {
                 replace_images_in_value(nested, text);
             }

@@ -174,20 +174,21 @@ impl RequestForwarder {
             .get("model")
             .and_then(Value::as_str)
             .map(str::trim)
-            .unwrap_or("");
+            .unwrap_or("")
+            .to_string();
 
         if model.is_empty() {
             return false;
         }
 
         // 字典优先：模型在能力字典中已标记为多模态时无需路由
-        if is_model_multimodal(model) {
+        if is_model_multimodal(&model) {
             return false;
         }
 
         let capability = image_input_capability_from_settings(
             &provider.settings_config,
-            model,
+            &model,
             true, // use_confirmed_registry
         );
 
@@ -264,23 +265,25 @@ impl RequestForwarder {
 
         let fallback_provider_id = &self.multimodal_config.fallback_provider_id;
         if !fallback_provider_id.is_empty() {
+            let current_provider_name = providers
+                .first()
+                .map(|p| p.name.as_str())
+                .unwrap_or("")
+                .to_string();
             match self
                 .router
                 .get_provider_by_id(fallback_provider_id, app_type_str)
                 .await
             {
                 Ok(Some(fallback_provider)) => {
-                    *providers = vec![fallback_provider.clone()];
                     log::info!(
                         "[Multimodal] Auto-routed provider='{}' model='{}' → provider='{}' model='{}'",
-                        providers
-                            .first()
-                            .map(|p| p.name.as_str())
-                            .unwrap_or(""),
+                        current_provider_name,
                         model,
                         fallback_provider.name,
                         fallback_model
                     );
+                    *providers = vec![fallback_provider.clone()];
                 }
                 Ok(None) => {
                     log::warn!(
@@ -586,7 +589,8 @@ impl RequestForwarder {
             let request_model = body
                 .get("model")
                 .and_then(|v| v.as_str())
-                .unwrap_or("");
+                .unwrap_or("")
+                .to_string();
 
             if let Some(binding) = self
                 .multimodal_config

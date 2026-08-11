@@ -1,4 +1,4 @@
-//! 官方订阅额度查询服务
+﻿//! 官方订阅额度查询服务
 //!
 //! 读取 CLI 工具的已有 OAuth 凭据，查询官方订阅额度。
 //! 第一层：仅读取凭据，不实现登录/刷新。
@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use std::collections::HashMap;
 
-use crate::commands::misc::decode_command_output;
+use crate::commands::decode_command_output;
 use crate::config;
 
 // ── 数据类型 ──────────────────────────────────────────────
@@ -974,10 +974,14 @@ fn parse_gemini_file_json(content: &str) -> GeminiCredentials {
 /// 请通过环境变量注入实际值：
 ///   - `GEMINI_OAUTH_CLIENT_ID`
 ///   - `GEMINI_OAUTH_CLIENT_SECRET`
-const GEMINI_OAUTH_CLIENT_ID: &str =
-    option_env!("GEMINI_OAUTH_CLIENT_ID").unwrap_or("681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com");
-const GEMINI_OAUTH_CLIENT_SECRET: &str =
-    option_env!("GEMINI_OAUTH_CLIENT_SECRET").unwrap_or("");
+const GEMINI_OAUTH_CLIENT_ID: &str = match option_env!("GEMINI_OAUTH_CLIENT_ID") {
+    Some(v) => v,
+    None => "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com",
+};
+const GEMINI_OAUTH_CLIENT_SECRET: &str = match option_env!("GEMINI_OAUTH_CLIENT_SECRET") {
+    Some(v) => v,
+    None => "",
+};
 
 /// 使用 refresh_token 刷新 Gemini access token
 ///

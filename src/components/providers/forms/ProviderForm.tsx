@@ -362,17 +362,40 @@ function ProviderFormFull({
     queryFn: () => providersApi.getAll(appId),
   });
 
+  const allAppIds: AppId[] = [
+    "claude",
+    "claude-desktop",
+    "codex",
+    "gemini",
+    "grokbuild",
+    "opencode",
+    "openclaw",
+    "hermes",
+  ];
+
+  const { data: allAppsProvidersData } = useQuery({
+    queryKey: ["providers", "all-apps"],
+    queryFn: () => Promise.all(allAppIds.map((id) => providersApi.getAll(id))),
+  });
+
   const providers: Record<string, { id: string; name: string }> = useMemo(
     () => {
-      if (!providersData) return {};
-      return Object.fromEntries(
-        Object.entries(providersData).map(([id, provider]) => [
-          id,
-          { id, name: provider.name },
-        ]),
-      );
+      const merged: Record<string, { id: string; name: string }> = {};
+      const maps = [
+        ...(providersData ? [providersData] : []),
+        ...(allAppsProvidersData ?? []),
+      ];
+      for (const map of maps) {
+        if (!map) continue;
+        for (const [id, provider] of Object.entries(map)) {
+          if (!merged[id]) {
+            merged[id] = { id, name: provider.name };
+          }
+        }
+      }
+      return merged;
     },
-    [providersData],
+    [allAppsProvidersData, providersData],
   );
 
   const handleAddCompositeBinding = async () => {
@@ -894,17 +917,6 @@ function ProviderFormFull({
     initialData: appId === "gemini" ? initialData : undefined,
   });
 
-  const currentModel = useMemo(() => {
-    if (appId === "claude") return claudeModel;
-    if (appId === "codex") return codexModel;
-    if (appId === "gemini") return geminiModel;
-    return "";
-  }, [appId, claudeModel, codexModel, geminiModel]);
-
-  const modelCapability = currentModel
-    ? getModelCapability(currentModel)
-    : undefined;
-
   const updateGeminiEnvField = useCallback(
     (
       key: "GEMINI_API_KEY" | "GOOGLE_GEMINI_BASE_URL" | "GEMINI_MODEL",
@@ -1033,6 +1045,29 @@ function ProviderFormFull({
     data: hermesLiveProviderIds = [],
     isLoading: isHermesLiveProviderIdsLoading,
   } = useHermesLiveProviderIds(appId === "hermes");
+
+  const currentModel = useMemo(() => {
+    if (appId === "claude") return claudeModel;
+    if (appId === "codex") return codexModel;
+    if (appId === "gemini") return geminiModel;
+    if (appId === "opencode") {
+      const keys = Object.keys(opencodeForm.opencodeModels);
+      return keys.length > 0 ? keys[0] : "";
+    }
+    if (appId === "openclaw") {
+      const models = openclawForm.openclawModels;
+      return models.length > 0 ? (models[0].name || models[0].id || "") : "";
+    }
+    if (appId === "hermes") {
+      const models = hermesForm.hermesModels;
+      return models.length > 0 ? (models[0].name || models[0].id || "") : "";
+    }
+    return "";
+  }, [appId, claudeModel, codexModel, geminiModel, opencodeForm.opencodeModels, openclawForm.openclawModels, hermesForm.hermesModels]);
+
+  const modelCapability = currentModel
+    ? getModelCapability(currentModel)
+    : undefined;
 
   const additiveExistingProviderKeys = useMemo(() => {
     if (appId === "opencode" && !isAnyOmoCategory) {
@@ -2710,10 +2745,7 @@ function ProviderFormFull({
             </>
           )}
 
-          {!isAnyOmoCategory &&
-            appId !== "opencode" &&
-            appId !== "openclaw" &&
-            appId !== "hermes" && (
+          {!isAnyOmoCategory && (
               <ProviderAdvancedConfig
                 pricingConfig={pricingConfig}
                 onPricingConfigChange={setPricingConfig}

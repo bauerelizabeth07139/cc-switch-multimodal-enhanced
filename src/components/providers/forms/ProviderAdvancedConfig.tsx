@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronRight, Coins, Brain, Link2 } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { ChevronDown, ChevronRight, Coins, Brain, Link2, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -82,25 +83,78 @@ export function ProviderAdvancedConfig({
     setIsPricingConfigOpen(pricingConfig.enabled);
   }, [pricingConfig.enabled]);
 
-  useEffect(() => {
-    setIsReasoningConfigOpen(reasoningConfig.isReasoningModel);
-  }, [reasoningConfig.isReasoningModel]);
+  const lastAutoAppliedCap = useRef<string | undefined>(undefined);
 
-  const effectiveThinkingStrengthOptions = useMemo(() => {
-    if (!modelCapability?.thinkingStrength || modelCapability.thinkingStrength.length === 0) {
-      return THINKING_STRENGTH_OPTIONS;
+  useEffect(() => {
+    if (!modelCapability) return;
+    const capKey = modelCapability.name;
+    if (lastAutoAppliedCap.current === capKey) return;
+    lastAutoAppliedCap.current = capKey;
+
+    const updates: Partial<ReasoningConfig> = {};
+    let hasUpdate = false;
+
+    if (modelCapability.reasoning && !reasoningConfig.isReasoningModel) {
+      updates.isReasoningModel = true;
+      hasUpdate = true;
     }
-    const allowed = new Set(modelCapability.thinkingStrength);
-    return THINKING_STRENGTH_OPTIONS.filter((opt) => {
-      if (opt.value === "auto") return true;
-      return allowed.has(opt.value);
-    });
+
+    if (
+      modelCapability.thinkingStrength &&
+      modelCapability.thinkingStrength.length > 0 &&
+      (reasoningConfig.thinkingStrength === "auto" ||
+        !modelCapability.thinkingStrength.includes(
+          reasoningConfig.thinkingStrength,
+        ))
+    ) {
+      updates.thinkingStrength = modelCapability.thinkingStrength[0];
+      hasUpdate = true;
+    }
+
+    if (
+      modelCapability.contextLimit &&
+      !reasoningConfig.contextLimit
+    ) {
+      updates.contextLimit = String(modelCapability.contextLimit);
+      hasUpdate = true;
+    }
+
+    if (hasUpdate) {
+      onReasoningConfigChange({ ...reasoningConfig, ...updates });
+    }
   }, [modelCapability]);
 
+  const effectiveThinkingStrengthOptions = useMemo(() => {
+    let options: typeof THINKING_STRENGTH_OPTIONS;
+    if (
+      !modelCapability?.thinkingStrength ||
+      modelCapability.thinkingStrength.length === 0
+    ) {
+      options = THINKING_STRENGTH_OPTIONS;
+    } else {
+      const allowed = new Set(modelCapability.thinkingStrength);
+      options = THINKING_STRENGTH_OPTIONS.filter((opt) => {
+        if (opt.value === "auto") return true;
+        return allowed.has(opt.value);
+      });
+    }
+    const current = reasoningConfig.thinkingStrength;
+    if (current && !options.some((opt) => opt.value === current)) {
+      options = [
+        ...options,
+        { value: current, labelKey: current, defaultLabel: current },
+      ];
+    }
+    return options;
+  }, [modelCapability, reasoningConfig.thinkingStrength]);
+
   const showThinkingStrengthHint =
-    modelCapability?.thinkingStrength &&
+    reasoningConfig.thinkingStrength !== "auto" &&
+    !!modelCapability?.thinkingStrength &&
     modelCapability.thinkingStrength.length > 0 &&
-    !modelCapability.thinkingStrength.includes(reasoningConfig.thinkingStrength);
+    !modelCapability.thinkingStrength.includes(
+      reasoningConfig.thinkingStrength,
+    );
 
   const contextLimitFromCapability = modelCapability?.contextLimit;
   const contextLimitIsDefault =
@@ -303,6 +357,36 @@ export function ProviderAdvancedConfig({
           )}
         >
           <div className="border-t border-border/50 p-4 space-y-4">
+            {modelCapability && (
+              <div className="flex flex-wrap items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 px-3 py-2">
+                <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                  {modelCapability.name}
+                </span>
+                {modelCapability.modalities.map((mod) => (
+                  <Badge
+                    key={mod}
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0"
+                  >
+                    {mod}
+                  </Badge>
+                ))}
+                {modelCapability.reasoning && (
+                  <Badge
+                    variant="default"
+                    className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                  >
+                    {t("providerAdvanced.capReasoning", { defaultValue: "推理" })}
+                  </Badge>
+                )}
+                {(modelCapability.contextLimit ?? 0) > 0 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {modelCapability.contextLimit!.toLocaleString()} ctx
+                  </span>
+                )}
+              </div>
+            )}
             {modelCapability?.reasoning && !reasoningConfig.isReasoningModel && (
               <p className="text-xs text-muted-foreground">
                 {t("providerAdvanced.reasoningModelHint", {
@@ -326,7 +410,6 @@ export function ProviderAdvancedConfig({
                       thinkingStrength: value,
                     })
                   }
-                  disabled={!reasoningConfig.isReasoningModel}
                 >
                   <SelectTrigger id="thinking-strength">
                     <SelectValue />
@@ -384,7 +467,6 @@ export function ProviderAdvancedConfig({
                           defaultValue: "留空使用模型默认值",
                         })
                   }
-                  disabled={!reasoningConfig.isReasoningModel}
                 />
                 {contextLimitFromCapability && (
                   <p className="text-xs text-muted-foreground">
@@ -490,7 +572,7 @@ export function ProviderAdvancedConfig({
                   })}
                 </Label>
                 <Select
-                  value={compositeBinding.eyes_provider_id}
+                  value={compositeBinding.eyes_provider_id || undefined}
                   onValueChange={(value) =>
                     onCompositeBindingChange({
                       ...compositeBinding,
@@ -506,11 +588,6 @@ export function ProviderAdvancedConfig({
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">
-                      {t("providerAdvanced.noProvider", {
-                        defaultValue: "无",
-                      })}
-                    </SelectItem>
                     {Object.values(providers).map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.name}
@@ -546,7 +623,7 @@ export function ProviderAdvancedConfig({
                   })}
                 </Label>
                 <Select
-                  value={compositeBinding.brain_provider_id}
+                  value={compositeBinding.brain_provider_id || undefined}
                   onValueChange={(value) =>
                     onCompositeBindingChange({
                       ...compositeBinding,
@@ -562,11 +639,6 @@ export function ProviderAdvancedConfig({
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">
-                      {t("providerAdvanced.noProvider", {
-                        defaultValue: "无",
-                      })}
-                    </SelectItem>
                     {Object.values(providers).map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.name}

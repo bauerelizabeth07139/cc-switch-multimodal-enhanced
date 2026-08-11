@@ -23,40 +23,68 @@
 
 当请求输入包含图片、视频或音频时，自动路由到支持多模态的模型。
 
-- **无缝切换**：可以使用同一个 URL 下的同一个 Key，也可以使用不同 URL 的不同 Key
+**路由标签页包含三个子选项卡：**
+
+#### a) 多模态自动路由
+- **启用开关**：一键开启/关闭多模态自动路由
 - **回退模型配置**：可指定回退模型名称和供应商
-- **智能识别**：内置 comprehensive 模型能力字典，自动识别模型支持的模态（text / image / audio / video）
-- **支持模型**：Step 3.7 Flash（全模态）、GPT-4o 系列、Claude 4/3.5 系列、Gemini 2.5/1.5 系列、DeepSeek、Qwen3 等
+- **无缝切换**：可以使用同一个 URL 下的同一个 Key，也可以使用不同 URL 的不同 Key
 
-### 2. 组合模型绑定（Add Provider > Advanced）
+#### b) 模型能力字典（新增）
+- **搜索与筛选**：支持按模型名称搜索，按模态类型（图片/音频/视频）筛选
+- **Comprehensive 能力表**：展示内置的所有模型及其能力信息
+  - 支持的模态类型（text / image / audio / video）
+  - 是否支持推理 (reasoning)
+  - 思考强度档位（low / medium / high / xhigh）
+  - 上下文窗口大小
+- **设计原则**：同一个模型名字即认为是同一个模型，不管 URL 是什么
+- **内置模型数量**：170+ 模型，覆盖 OpenAI、Anthropic、Google、DeepSeek、Qwen、GLM、MiniMax、StepFun、Grok、Kimi、Mistral、Doubao、Hunyuan 等
 
-在添加供应商的高级选项中，可以将多模态视觉模型（Eyes）与推理模型（Brain）绑定为一个新的逻辑模型。
-
+#### c) 组合模型绑定
+- **Eyes + Brain 架构**：将多模态视觉模型（Eyes）与推理模型（Brain）绑定为一个新的逻辑模型
 - **用户自定义名称**：绑定后生成的新模型由用户取名字
-- **Eyes + Brain 架构**：Eyes 模型处理视觉输入，Brain 模型负责最终推理
-- **全局管理**：绑定创建后可在 Settings > Advanced > 组合模型绑定中查看和管理
-- **支持跨供应商**：Eyes 和 Brain 可以使用不同供应商、不同 URL 和 Key
+- **跨供应商支持**：Eyes 和 Brain 可以使用不同供应商、不同 URL 和 Key
+- **全局管理**：在此标签页中查看、添加、删除绑定
 
-### 3. 模型能力字典
+### 2. 组合模型绑定（添加/编辑供应商 > 高级选项）
 
-新增了 comprehensive 的模型能力字典，覆盖：
+在添加或编辑供应商时的**高级选项**中，可以直接创建组合模型绑定：
 
-- **模态支持**：text / image / audio / video
-- **推理支持**：是否支持 reasoning 模式
-- **思考强度档位**：auto / low / medium / high / xhigh（根据模型自动推荐）
-- **上下文上限**：每个模型的推荐上下文窗口大小
+- **视觉模型 (Eyes)**：选择用于处理图片/视频/音频输入的多模态模型
+- **推理模型 (Brain)**：选择负责最终推理的 LLM 模型
+- **绑定名称**：用户自定义该组合模型的名称
+- 绑定创建后会自动添加到路由设置中，也可在 Settings > Routing > 组合模型绑定中管理
+
+### 3. 推理模型配置增强（添加/编辑供应商 > 高级选项）
+
+在配置新供应商时，**高级选项 > 推理模型配置**现在支持：
+
+- **自动识别**：根据模型名称自动从内置字典查找是否为推理模型
+- **自动填充思考强度**：模型支持推理时自动填充推荐的思考强度档位
+- **自动填充上下文限制**：根据模型自动填充推荐的上下文窗口大小
+- **能力提示**：配置区顶部显示当前模型的完整能力信息（模态类型、推理支持、上下文大小）
+- **适用所有应用类型**：Claude、Codex、Gemini、OpenCode、OpenClaw、Hermes 全支持
+
+### 4. 模型能力字典（底层升级）
+
+相比原版的 ~20 个模型，现已扩充到 **170+ 个模型**，与 Rust 后端的 `multimodal_router.rs` 完全同步：
+
+- **OpenAI**：gpt-4o, gpt-4.1, gpt-5.x, o1/o3/o4 系列
+- **Anthropic Claude**：claude-3.x, claude-opus-4.x, claude-sonnet-4.x, claude-haiku-4.5
+- **Google Gemini**：gemini-1.5, 2.0, 2.5, 3.x 系列
+- **DeepSeek**：deepseek-chat, deepseek-reasoner, deepseek-v3/v4 系列
+- **Alibaba Qwen**：qwen3-max, qwen3-coder, qwen3.7/.8 系列
+- **Zhipu GLM**：glm-4.x, glm-5.x 系列
+- **MiniMax**：minimax-m2/m3 系列
+- **StepFun**：step-3.5/3.7-flash, step-2x-large
+- **xAI Grok**：grok-3/4 系列
+- **Moonshot Kimi**：kimi-k2/k3 系列
+- **Mistral**：mistral-large/medium/small 系列
+- **ByteDance Doubao**：doubao-seed 系列
+- **Tencent Hunyuan**：hunyuan-hy3
+- 以及各种编码代理聚合模型
 
 **设计原则**：同一个模型名字即认为是同一个模型，不管 URL 是什么。
-
-### 4. 推理模型配置增强
-
-在配置新供应商时，现在可以：
-
-- **选择是否为推理模型**：标记供应商支持 reasoning
-- **获取思考强度档位**：根据选择的模型自动推荐可用的思考强度
-- **获取上下文上限**：根据模型自动填充推荐的上下文限制数量
-
-这些能力信息来自内置的模型字典，无需手动查询文档。
 
 ## 原版功能保留
 
@@ -85,19 +113,21 @@
 
 1. 打开 **Settings**
 2. 切换到 **Routing** 标签页
-3. 启用 **多模态自动路由**
+3. 在 **多模态自动路由** 子选项卡中启用自动路由
 4. 配置回退模型和供应商
+5. 在 **模型能力字典** 子选项卡中可查看所有支持的模型
+6. 在 **组合模型绑定** 子选项卡中管理 Eyes + Brain 绑定
 
 ## 测试说明
 
-使用 Step Plan Key 测试：
+使用 Step Plan Key 测试（在新供应商的高级选项中添加时，会自动识别模型能力）：
 
 ```
 2L5DXp5JijQW9a4tiL5d4SjqCT6iGrYTA5DoSRRx5VzwHKjmn0YxmM8eul8ehWJ1x
 ```
 
-- **Step 3.7 Flash**：已标记为全模态模型（text / image / audio / video），支持推理，思考强度档位 low/medium/high/xhigh，上下文限制 128k
-- 其余模型均按字典配置处理
+- **Step 3.7 Flash**：已标记为多模态模型（text / image / video），支持推理，思考强度档位 low/medium/high，上下文限制 256k
+- **其余模型**：均按字典配置处理，Step 3.5 Flash 标记为文本模型（推理模型，上下文 256k）
 
 ## 构建与开发
 

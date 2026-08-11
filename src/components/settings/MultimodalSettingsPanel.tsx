@@ -171,23 +171,9 @@ export function MultimodalSettingsPanel() {
       </div>
 
       <div className="border-t pt-6">
-          <div className="space-y-1 mb-4">
-            <h4 className="text-sm font-medium">
-              {t("settings.advanced.multimodal.compositeBindings.title", {
-                defaultValue: "组合模型绑定",
-              })}
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              {t("settings.advanced.multimodal.compositeBindings.description", {
-                defaultValue:
-                  "将视觉模型（eyes）与推理模型（brain）绑定为同一逻辑模型",
-              })}
-            </p>
-          </div>
-
-          {config.composite_bindings.length > 0 && (
+          {(config.composite_bindings ?? []).length > 0 && (
             <div className="space-y-2 mb-4">
-              {config.composite_bindings.map((binding) => (
+              {(config.composite_bindings ?? []).map((binding) => (
                 <div
                   key={binding.name}
                   className="flex items-center justify-between rounded-md border border-border-default px-4 py-3"
