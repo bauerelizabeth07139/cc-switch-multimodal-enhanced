@@ -42,15 +42,35 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Check Rust version and update lockfile
+      - name: Ensure correct Rust version (from rust-toolchain.toml)
         shell: bash
         run: |
+          set -euxo pipefail
+          REQUIRED=$(grep -Po '(?<=channel = ")[^"]*' rust-toolchain.toml || echo "stable")
+          echo "Required Rust channel: $REQUIRED"
+          rustup toolchain install "$REQUIRED"
+          rustup default "$REQUIRED"
           rustc --version
           cargo --version
+
+      - name: Cargo check and update lockfile
+        shell: bash
+        run: |
+          set -euxo pipefail
           cd src-tauri
           cargo update -w
+          echo "✅ cargo update completed"
           cargo check --verbose 2>&1 | tee /tmp/cargo-check.log
           echo "✅ cargo check passed"
+
+      - name: Show cargo check log on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== Cargo check log (last 200 lines) ==="
+          tail -200 /tmp/cargo-check.log 2>/dev/null || true
+          echo "=== Cargo.toml ==="
+          cat src-tauri/Cargo.toml
 
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
