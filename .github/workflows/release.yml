@@ -184,14 +184,16 @@ jobs:
             fi
             echo "✅ Tauri signing key prepared"
           else
-            echo "⚠️ No signing key secret — disabling updater artifacts"
+            echo "⚠️ No signing key secret — disabling updater artifacts, using ad-hoc macOS signing"
             node -e "
               const path = 'src-tauri/tauri.conf.json';
               const c = JSON.parse(require('fs').readFileSync(path, 'utf8'));
               c.bundle.createUpdaterArtifacts = false;
+              c.bundle.macOS = c.bundle.macOS || {};
+              c.bundle.macOS.signingIdentity = '-';
               require('fs').writeFileSync(path, JSON.stringify(c, null, 2));
             "
-            echo "✅ Updater artifacts disabled for unsigned build"
+            echo "✅ Updater artifacts disabled, macOS ad-hoc signing set"
           fi
 
       - name: Import Apple signing certificate
@@ -260,20 +262,9 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         timeout-minutes: 60
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
         run: |
-          set -euo pipefail
-          if [ -n "${APPLE_SIGNING_IDENTITY:-}" ]; then
-            echo "🔐 Signing identity available: $APPLE_SIGNING_IDENTITY"
-            pnpm tauri build --target universal-apple-darwin 2>&1 | tee /tmp/tauri-build.log
-          else
-            echo "⚠️ No signing identity — building with ad-hoc signing"
-            pnpm tauri build --target universal-apple-darwin --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}' 2>&1 | tee /tmp/tauri-build.log
-          fi
-          BUILD_EXIT=${PIPESTATUS[0]}
-          echo "=== Tauri build exit code: $BUILD_EXIT ==="
-          exit $BUILD_EXIT
+          set -euxo pipefail
+          pnpm tauri build --target universal-apple-darwin
 
       - name: Build Tauri App (Linux)
         if: runner.os == 'Linux'
