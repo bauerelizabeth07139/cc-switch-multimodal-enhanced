@@ -705,10 +705,13 @@ mod tests {
         assert!(is_model_multimodal("step-3.7-flash"));
         assert!(is_model_multimodal("openai/gpt-4o"));
         assert!(is_model_multimodal("GPT-4O"));
+        // Claude 3 Opus/Sonnet/Haiku all accept image input (documented by Anthropic)
+        assert!(is_model_multimodal("claude-3-opus"));
+        assert!(is_model_multimodal("claude-3-sonnet"));
+        assert!(is_model_multimodal("claude-3-haiku"));
 
         assert!(!is_model_multimodal("deepseek-chat"));
         assert!(!is_model_multimodal("gpt-4"));
-        assert!(!is_model_multimodal("claude-3-opus"));
         assert!(!is_model_multimodal("step-3.5-flash"));
     }
 

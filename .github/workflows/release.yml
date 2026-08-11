@@ -61,6 +61,31 @@ jobs:
           cargo update -w
           echo "✅ cargo update completed"
 
+      - name: Cargo build test (release, diagnostic, non-blocking)
+        shell: bash
+        run: |
+          set +e
+          cd src-tauri
+          cargo build --release 2>&1 | tee /tmp/cargo-build.log
+          RC=${PIPESTATUS[0]}
+          echo "=== Cargo build exit code: $RC ==="
+          echo "=== Last 50 lines ==="
+          tail -50 /tmp/cargo-build.log
+          echo "=== ERROR lines ==="
+          grep -Ei 'error' /tmp/cargo-build.log | head -30 || true
+          if [ $RC -ne 0 ]; then
+            echo "❌ Cargo build failed"
+            exit 0  # Don't fail workflow, let Tauri build run too
+          fi
+          echo "✅ Cargo build passed"
+
+      - name: Clean cargo build artifacts to save disk space
+        shell: bash
+        run: |
+          cd src-tauri
+          cargo clean --release
+          echo "✅ Cargo release artifacts cleaned"
+
       - name: Cargo check (diagnostic, non-blocking)
         shell: bash
         run: |
