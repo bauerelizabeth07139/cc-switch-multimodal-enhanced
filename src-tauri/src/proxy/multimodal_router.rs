@@ -155,12 +155,8 @@ static MODEL_CAPABILITIES: &[ModelCapabilities] = &[
     ModelCapabilities {
         name: "deepseek-chat".to_string(),
         modalities: vec!["text".to_string()],
-        reasoning: true,
-        thinking_strength: vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-        ],
+        reasoning: false,
+        thinking_strength: vec![],
         context_limit: 64000,
         output_modalities: None,
     },
@@ -257,9 +253,11 @@ pub fn get_model_capability_for_name(model_name: &str) -> Option<&'static ModelC
 /// Check if a model name matches a known multimodal model.
 ///
 /// Uses case-insensitive substring matching on the model name tail (after the last `/`).
+/// A model is considered multimodal when it supports any non-text input modality
+/// (image, audio, or video).
 pub fn is_model_multimodal(model_name: &str) -> bool {
     get_model_capability_for_name(model_name)
-        .map(|cap| cap.modalities.iter().any(|m| m == "image"))
+        .map(|cap| cap.modalities.iter().any(|m| m != "text"))
         .unwrap_or(false)
 }
 
@@ -715,6 +713,15 @@ mod tests {
         assert!(!is_model_multimodal("gpt-4"));
         assert!(!is_model_multimodal("claude-3-opus"));
         assert!(!is_model_multimodal("step-3.5-flash"));
+    }
+
+    #[test]
+    fn test_is_model_multimodal_respects_audio_video_modalities() {
+        // gemini and step-3.7-flash are marked with audio/video modalities
+        assert!(is_model_multimodal("gemini-2.5-pro"));
+        assert!(is_model_multimodal("gemini-2.5-flash"));
+        assert!(is_model_multimodal("step-3.7-flash"));
+        assert!(is_model_multimodal("openrouter/google/gemini-2.5-pro"));
     }
 
     #[test]

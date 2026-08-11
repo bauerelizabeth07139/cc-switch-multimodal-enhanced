@@ -152,19 +152,21 @@ pub struct RequestForwarder {
 }
 
 impl RequestForwarder {
-    /// 多模态自动路由：当请求包含图片且当前模型为纯文本时，自动切换到多模态模型
+    /// 多模态自动路由：当请求包含图片、视频或音频且当前模型为纯文本时，自动切换到多模态模型
     ///
-    /// 如果启用了多模态自动路由，且请求包含图片，且当前模型不支持图片输入，
-    /// 则将模型切换到配置的多模态回退模型，避免图片被降级 stripping。
+    /// 如果启用了多模态自动路由，且请求包含多模态媒体（图片/视频/音频），
+    /// 且当前模型不支持这些模态输入，则将模型切换到配置的多模态回退模型，
+    /// 避免媒体被降级 stripping。
     /// 返回 true 表示已执行自动路由。
     fn apply_multimodal_auto_route(&self, body: &mut Value, provider: &Provider) -> bool {
         use crate::model_capabilities::{image_input_capability_from_settings, ImageInputCapability};
+        use crate::proxy::multimodal_router::is_model_multimodal;
 
         if !self.multimodal_config.enabled {
             return false;
         }
 
-        if !super::media_sanitizer::contains_image_blocks(body) {
+        if !super::media_sanitizer::contains_media_blocks(body) {
             return false;
         }
 
@@ -175,6 +177,11 @@ impl RequestForwarder {
             .unwrap_or("");
 
         if model.is_empty() {
+            return false;
+        }
+
+        // 字典优先：模型在能力字典中已标记为多模态时无需路由
+        if is_model_multimodal(model) {
             return false;
         }
 

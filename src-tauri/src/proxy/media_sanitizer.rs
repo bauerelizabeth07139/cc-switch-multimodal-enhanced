@@ -48,6 +48,104 @@ pub fn contains_image_blocks(body: &Value) -> bool {
         || gemini_contents_have_image_blocks(body)
 }
 
+/// Check if the body contains any multimodal media blocks (image, audio, or video).
+///
+/// Unlike `contains_image_blocks`, this also detects audio (`input_audio`,
+/// `audio`) and video (`input_video`, `video`, `input_file`) blocks across the
+/// OpenAI Chat, OpenAI Responses, and Gemini payload shapes. It is used by the
+/// multimodal auto-router to decide whether a request needs a multimodal model.
+pub fn contains_media_blocks(body: &Value) -> bool {
+    contains_image_blocks(body)
+        || messages_have_audio_video_blocks(body)
+        || responses_input_has_audio_video_blocks(body.get("input"))
+        || gemini_contents_have_audio_video_blocks(body)
+}
+
+/// Detect audio/video blocks inside OpenAI Chat `messages`.
+fn messages_have_audio_video_blocks(body: &Value) -> bool {
+    body.get("messages")
+        .and_then(Value::as_array)
+        .is_some_and(|messages| {
+            messages
+                .iter()
+                .any(|message| message.get("content").is_some_and(content_has_audio_video_blocks))
+        })
+}
+
+/// Recursively detect audio/video blocks inside a content array.
+fn content_has_audio_video_blocks(content: &Value) -> bool {
+    let Some(blocks) = content.as_array() else {
+        return false;
+    };
+
+    blocks.iter().any(|block| {
+        is_audio_video_block_type(block.get("type").and_then(Value::as_str))
+            || block
+                .get("content")
+                .is_some_and(content_has_audio_video_blocks)
+    })
+}
+
+/// Detect audio/video blocks inside the OpenAI Responses `input` payload.
+fn responses_input_has_audio_video_blocks(input: Option<&Value>) -> bool {
+    match input {
+        Some(Value::Array(items)) => {
+            items.iter().any(responses_input_item_has_audio_video_blocks)
+        }
+        Some(item @ Value::Object(_)) => responses_input_item_has_audio_video_blocks(item),
+        _ => false,
+    }
+}
+
+fn responses_input_item_has_audio_video_blocks(item: &Value) -> bool {
+    is_audio_video_block_type(item.get("type").and_then(Value::as_str))
+        || item.get("content").is_some_and(content_has_audio_video_blocks)
+}
+
+/// Detect audio/video blocks inside Gemini `contents`.
+fn gemini_contents_have_audio_video_blocks(body: &Value) -> bool {
+    body.get("contents")
+        .and_then(Value::as_array)
+        .is_some_and(|contents| {
+            contents.iter().any(|content| {
+                content
+                    .get("parts")
+                    .and_then(Value::as_array)
+                    .is_some_and(|parts| parts.iter().any(gemini_part_has_audio_or_video))
+            })
+        })
+}
+
+fn gemini_part_has_audio_or_video(part: &Value) -> bool {
+    gemini_media_payload_is_audio_or_video(part.get("inlineData").or_else(|| part.get("inline_data")))
+        || gemini_media_payload_is_audio_or_video(
+            part.get("fileData").or_else(|| part.get("file_data")),
+        )
+        || part
+            .get("functionResponse")
+            .or_else(|| part.get("function_response"))
+            .and_then(|response| response.get("parts"))
+            .and_then(Value::as_array)
+            .is_some_and(|parts| parts.iter().any(gemini_part_has_audio_or_video))
+}
+
+fn gemini_media_payload_is_audio_or_video(payload: Option<&Value>) -> bool {
+    payload
+        .and_then(|payload| payload.get("mimeType").or_else(|| payload.get("mime_type")))
+        .and_then(Value::as_str)
+        .is_some_and(|mime_type| {
+            let mime_type = mime_type.to_ascii_lowercase();
+            mime_type.starts_with("audio/") || mime_type.starts_with("video/")
+        })
+}
+
+fn is_audio_video_block_type(block_type: Option<&str>) -> bool {
+    matches!(
+        block_type,
+        Some("audio" | "input_audio" | "video" | "input_video" | "input_file")
+    )
+}
+
 pub fn replace_image_blocks_with_marker(body: &mut Value) -> usize {
     replace_images_in_body(body)
 }
@@ -1026,6 +1124,97 @@ mod tests {
         assert!(!contains_image_blocks(&body));
         assert_eq!(replace_image_blocks_with_marker(&mut body), 0);
         assert_eq!(body, original);
+    }
+
+    #[test]
+    fn contains_media_blocks_detects_chat_audio_and_video() {
+        let audio = json!({
+            "model": "deepseek-chat",
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "listen"},
+                    {"type": "input_audio", "input_audio": {"data": "AUDIO", "format": "wav"}}
+                ]
+            }]
+        });
+        assert!(contains_media_blocks(&audio));
+
+        let video = json!({
+            "model": "deepseek-chat",
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "watch"},
+                    {"type": "input_video", "input_video": {"data": "VIDEO", "format": "mp4"}}
+                ]
+            }]
+        });
+        assert!(contains_media_blocks(&video));
+
+        let video_file = json!({
+            "model": "deepseek-chat",
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "watch"},
+                    {"type": "input_file", "file_id": "file_1"}
+                ]
+            }]
+        });
+        assert!(contains_media_blocks(&video_file));
+    }
+
+    #[test]
+    fn contains_media_blocks_detects_responses_and_gemini_media() {
+        let responses = json!({
+            "input": [{
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {"type": "input_audio", "input_audio": {"data": "AUDIO", "format": "wav"}},
+                    {"type": "input_video", "input_video": {"data": "VIDEO", "format": "mp4"}}
+                ]
+            }]
+        });
+        assert!(contains_media_blocks(&responses));
+
+        let gemini_audio = json!({
+            "contents": [{
+                "role": "user",
+                "parts": [
+                    {"text": "listen"},
+                    {"inlineData": {"mimeType": "audio/wav", "data": "AUDIO"}}
+                ]
+            }]
+        });
+        assert!(contains_media_blocks(&gemini_audio));
+
+        let gemini_video = json!({
+            "contents": [{
+                "role": "user",
+                "parts": [
+                    {"text": "watch"},
+                    {"fileData": {"mimeType": "video/mp4", "fileUri": "gs://bucket/v.mp4"}}
+                ]
+            }]
+        });
+        assert!(contains_media_blocks(&gemini_video));
+    }
+
+    #[test]
+    fn contains_media_blocks_false_for_text_only_payloads() {
+        let text = json!({
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": [{"type": "text", "text": "hello"}]}]
+        });
+        assert!(!contains_media_blocks(&text));
+
+        let no_content = json!({
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": [{"type": "text", "text": "hi"}]}]
+        });
+        assert!(!contains_media_blocks(&no_content));
     }
 
     #[test]
