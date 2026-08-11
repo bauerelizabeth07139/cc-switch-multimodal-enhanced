@@ -39,6 +39,18 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check Rust version and update lockfile
+        shell: bash
+        run: |
+          rustc --version
+          cargo --version
+          cd src-tauri
+          cargo update -w
+          cargo check --verbose 2>&1 | tee /tmp/cargo-check.log
+          echo "✅ cargo check passed"
 
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
