@@ -61,57 +61,6 @@ jobs:
           cargo update -w
           echo "✅ cargo update completed"
 
-      - name: Cargo build test (release, diagnostic, non-blocking)
-        shell: bash
-        run: |
-          set +e
-          cd src-tauri
-          cargo build --release 2>&1 | tee /tmp/cargo-build.log
-          RC=${PIPESTATUS[0]}
-          echo "=== Cargo build exit code: $RC ==="
-          echo "=== Last 50 lines ==="
-          tail -50 /tmp/cargo-build.log
-          echo "=== ERROR lines ==="
-          grep -Ei 'error' /tmp/cargo-build.log | head -30 || true
-          if [ $RC -ne 0 ]; then
-            echo "❌ Cargo build failed"
-            exit 0  # Don't fail workflow, let Tauri build run too
-          fi
-          echo "✅ Cargo build passed"
-
-      - name: Clean cargo build artifacts to save disk space
-        shell: bash
-        run: |
-          cd src-tauri
-          cargo clean --release
-          echo "✅ Cargo release artifacts cleaned"
-
-      - name: Cargo check (diagnostic, non-blocking)
-        shell: bash
-        run: |
-          set +e
-          cd src-tauri
-          cargo check 2>&1 | tee /tmp/cargo-check.log
-          RC=${PIPESTATUS[0]}
-          echo "=== Cargo check exit code: $RC ==="
-          echo "=== First 80 lines ==="
-          head -80 /tmp/cargo-check.log
-          echo "=== Last 50 lines ==="
-          tail -50 /tmp/cargo-check.log
-          echo "=== ERROR lines ==="
-          grep -Ei 'error' /tmp/cargo-check.log | head -30 || true
-          if [ $RC -ne 0 ]; then
-            echo "❌ Cargo check failed but continuing for diagnostics"
-          fi
-
-      - name: Upload cargo check log
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: cargo-check-log-${{ runner.os }}-${{ matrix.arch || runner.arch }}
-          path: /tmp/cargo-check.log
-          if-no-files-found: ignore
-
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
         shell: pwsh
@@ -193,21 +142,6 @@ jobs:
 
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
-
-      - name: Check frontend build (diagnostic)
-        shell: bash
-        run: |
-          set +e
-          pnpm run build:renderer 2>&1 | tee /tmp/frontend-build.log
-          FRONTEND_EXIT=$?
-          echo "=== Frontend build exit code: $FRONTEND_EXIT ==="
-          echo "=== Frontend build log (last 100 lines) ==="
-          tail -100 /tmp/frontend-build.log
-          if [ $FRONTEND_EXIT -ne 0 ]; then
-            echo "❌ Frontend build failed with exit code $FRONTEND_EXIT"
-            exit 1
-          fi
-          echo "✅ Frontend build passed"
 
       - name: Prepare Tauri signing key
         shell: bash
@@ -309,49 +243,21 @@ jobs:
           WINDOWS_RELEASE_ARCH: ${{ matrix.arch || 'x86_64' }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $logFile = Join-Path $env:RUNNER_TEMP 'tauri-build.log'
+          # Build exe only, skip MSI bundling to avoid signing issues
           if ($env:WINDOWS_RELEASE_ARCH -eq 'arm64') {
-            pnpm tauri build --target aarch64-pc-windows-msvc --bundles msi *>&1 | Tee-Object -FilePath $logFile
+            pnpm tauri build --target aarch64-pc-windows-msvc --bundles none
           } else {
-            pnpm tauri build *>&1 | Tee-Object -FilePath $logFile
+            pnpm tauri build --bundles none
           }
-
-      - name: Upload tauri build log on failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: tauri-build-log-${{ runner.os }}-${{ matrix.arch || runner.arch }}
-          path: ${{ runner.os == 'Windows' && format('{0}\tauri-build.log', env.RUNNER_TEMP) || '/tmp/tauri-build.log' }}
-          if-no-files-found: ignore
 
       - name: Build Tauri App (macOS)
         if: runner.os == 'macOS'
         shell: bash
         timeout-minutes: 60
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          set +e
-          if [ -n "${APPLE_SIGNING_IDENTITY:-}" ]; then
-            echo "🔐 Signing identity available: $APPLE_SIGNING_IDENTITY"
-            pnpm tauri build --target universal-apple-darwin 2>&1 | tee /tmp/tauri-build.log
-          else
-            echo "⚠️ No signing identity — building unsigned (updater artifacts already disabled)"
-            pnpm tauri build --target universal-apple-darwin 2>&1 | tee /tmp/tauri-build.log
-          fi
-          BUILD_EXIT=${PIPESTATUS[0]}
-          echo "=== Tauri build exit code: $BUILD_EXIT ==="
-          exit $BUILD_EXIT
-
-      - name: Show tauri build log on failure (macOS)
-        if: failure() && runner.os == 'macOS'
-        shell: bash
-        run: |
-          echo "=== Tauri build log (last 150 lines) ==="
-          tail -150 /tmp/tauri-build.log 2>/dev/null || true
+          set -euo pipefail
+          echo "Building macOS without bundling (no signing identity)"
+          pnpm tauri build --target universal-apple-darwin --bundles none
 
       - name: Build Tauri App (Linux)
         if: runner.os == 'Linux'
