@@ -61,6 +61,24 @@ jobs:
           cargo update -w
           echo "✅ cargo update completed"
 
+      - name: Cargo check (diagnostic, non-blocking)
+        shell: bash
+        run: |
+          set +e
+          cd src-tauri
+          cargo check 2>&1 | tee /tmp/cargo-check.log
+          RC=${PIPESTATUS[0]}
+          echo "=== Cargo check exit code: $RC ==="
+          echo "=== First 80 lines ==="
+          head -80 /tmp/cargo-check.log
+          echo "=== Last 50 lines ==="
+          tail -50 /tmp/cargo-check.log
+          echo "=== ERROR lines ==="
+          grep -Ei 'error|Error' /tmp/cargo-check.log | head -30 || true
+          if [ $RC -ne 0 ]; then
+            echo "❌ Cargo check failed but continuing for diagnostics"
+          fi
+
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
         shell: pwsh
@@ -265,17 +283,13 @@ jobs:
             pnpm tauri build *>&1 | Tee-Object -FilePath $logFile
           }
 
-      - name: Show tauri build log on failure (Windows/Linux)
-        if: failure() && (runner.os == 'Windows' || runner.os == 'Linux')
-        shell: pwsh
-        run: |
-          Write-Output "=== Tauri build log (last 150 lines) ==="
-          $logFile = Join-Path $env:RUNNER_TEMP 'tauri-build.log'
-          if (Test-Path $logFile) {
-            Get-Content $logFile | Select-Object -Last 150
-          } else {
-            Write-Output "No build log found at $logFile"
-          }
+      - name: Upload tauri build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tauri-build-log-${{ runner.os }}-${{ matrix.arch || runner.arch }}
+          path: ${{ runner.os == 'Windows' && format('{0}\tauri-build.log', env.RUNNER_TEMP) || '/tmp/tauri-build.log' }}
+          if-no-files-found: ignore
 
       - name: Build Tauri App (macOS)
         if: runner.os == 'macOS'
