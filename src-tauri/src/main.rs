@@ -4,7 +4,8 @@
 fn main() {
     #[cfg(target_os = "windows")]
     {
-        use windows_sys::Win32::System::Console::{SetConsoleOutputCP, CP_UTF8};
+        use windows_sys::Win32::Globalization::CP_UTF8;
+        use windows_sys::Win32::System::Console::SetConsoleOutputCP;
         unsafe { SetConsoleOutputCP(CP_UTF8) };
     }
 
