@@ -74,10 +74,18 @@ jobs:
           echo "=== Last 50 lines ==="
           tail -50 /tmp/cargo-check.log
           echo "=== ERROR lines ==="
-          grep -Ei 'error|Error' /tmp/cargo-check.log | head -30 || true
+          grep -Ei 'error' /tmp/cargo-check.log | head -30 || true
           if [ $RC -ne 0 ]; then
             echo "❌ Cargo check failed but continuing for diagnostics"
           fi
+
+      - name: Upload cargo check log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cargo-check-log-${{ runner.os }}-${{ matrix.arch || runner.arch }}
+          path: /tmp/cargo-check.log
+          if-no-files-found: ignore
 
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'

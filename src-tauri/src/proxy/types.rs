@@ -226,7 +226,6 @@ fn default_true() -> bool {
 
 /// 复合模型绑定配置（Feature 2: Composite multimodal+LLM binding）
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct CompositeModelBinding {
     /// 复合模型名称（用户取的名字，如 "my-vision-model"）
     pub name: String,
@@ -242,7 +241,6 @@ pub struct CompositeModelBinding {
 
 /// 多模态路由配置
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct MultimodalRoutingConfig {
     /// 是否启用多模态自动路由
     #[serde(default)]

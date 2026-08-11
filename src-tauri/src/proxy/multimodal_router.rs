@@ -25,221 +25,215 @@ pub struct ModelCapabilities {
 }
 
 /// Comprehensive model capability dictionary keyed by normalized name tail (lowercase).
-static MODEL_CAPABILITIES: &[ModelCapabilities] = &[
-    ModelCapabilities {
-        name: "step-3.7-flash".to_string(),
-        modalities: vec![
-            "text".to_string(),
-            "image".to_string(),
-            "audio".to_string(),
-            "video".to_string(),
-        ],
-        reasoning: true,
-        thinking_strength: vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-            "xhigh".to_string(),
-        ],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gpt-4o".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gpt-4o-mini".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gpt-4-turbo".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "claude-opus-4".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 200000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "claude-sonnet-4".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 200000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "claude-3.5-sonnet".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 200000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "claude-3.5-haiku".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 200000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gemini-2.5-pro".to_string(),
-        modalities: vec![
-            "text".to_string(),
-            "image".to_string(),
-            "audio".to_string(),
-            "video".to_string(),
-        ],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 1000000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gemini-2.5-flash".to_string(),
-        modalities: vec![
-            "text".to_string(),
-            "image".to_string(),
-            "audio".to_string(),
-            "video".to_string(),
-        ],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 1000000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gemini-1.5-pro".to_string(),
-        modalities: vec![
-            "text".to_string(),
-            "image".to_string(),
-            "audio".to_string(),
-            "video".to_string(),
-        ],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 1000000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "gemini-1.5-flash".to_string(),
-        modalities: vec![
-            "text".to_string(),
-            "image".to_string(),
-            "audio".to_string(),
-            "video".to_string(),
-        ],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 1000000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "deepseek-chat".to_string(),
-        modalities: vec!["text".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 64000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "deepseek-reasoner".to_string(),
-        modalities: vec!["text".to_string()],
-        reasoning: true,
-        thinking_strength: vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-        ],
-        context_limit: 64000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "qwen3-coder-480b".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: true,
-        thinking_strength: vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-        ],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "qwen3-coder-plus".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: true,
-        thinking_strength: vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-        ],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "qwen3-coder-flash".to_string(),
-        modalities: vec!["text".to_string(), "image".to_string()],
-        reasoning: true,
-        thinking_strength: vec![
-            "low".to_string(),
-            "medium".to_string(),
-            "high".to_string(),
-        ],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "glm-5.2".to_string(),
-        modalities: vec!["text".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "minimax-m2.7".to_string(),
-        modalities: vec!["text".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 1000000,
-        output_modalities: None,
-    },
-    ModelCapabilities {
-        name: "step-3.5-flash".to_string(),
-        modalities: vec!["text".to_string()],
-        reasoning: false,
-        thinking_strength: vec![],
-        context_limit: 128000,
-        output_modalities: None,
-    },
-];
+///
+/// Modality conventions: `text`, `image`, `audio`, `video` refer to INPUT
+/// modalities unless otherwise noted (output_modalities). Same model name =
+/// same model regardless of URL/provider.
+static MODEL_CAPABILITIES: std::sync::LazyLock<Vec<ModelCapabilities>> = std::sync::LazyLock::new(|| {
+    use ModelCapabilities as M;
+    fn cap(name: &str, modalities: &[&str], reasoning: bool, thinking_strength: &[&str], context_limit: u32, output_modalities: Option<&[&str]>) -> M {
+        M {
+            name: name.to_string(),
+            modalities: modalities.iter().map(|s| s.to_string()).collect(),
+            reasoning,
+            thinking_strength: thinking_strength.iter().map(|s| s.to_string()).collect(),
+            context_limit,
+            output_modalities: output_modalities.map(|v| v.iter().map(|s| s.to_string()).collect()),
+        }
+    }
+    vec![
+        // ---- OpenAI ----
+        cap("gpt-4o", &["text", "image"], false, &[], 128000, None),
+        cap("gpt-4o-mini", &["text", "image"], false, &[], 128000, None),
+        cap("gpt-4-turbo", &["text", "image"], false, &[], 128000, None),
+        cap("gpt-4.1", &["text", "image"], false, &[], 1047576, None),
+        cap("gpt-4.1-mini", &["text", "image"], false, &[], 1047576, None),
+        cap("gpt-4.1-nano", &["text", "image"], false, &[], 1047576, None),
+        cap("gpt-5", &["text", "image"], true, &["low", "medium", "high"], 400000, None),
+        cap("gpt-5-mini", &["text", "image"], true, &["low", "medium", "high"], 400000, None),
+        cap("gpt-5-nano", &["text", "image"], true, &["low", "medium", "high"], 400000, None),
+        cap("gpt-5-pro", &["text", "image"], true, &["high"], 400000, None),
+        cap("gpt-5.1", &["text", "image"], true, &["low", "medium", "high"], 400000, None),
+        cap("gpt-5.2", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 400000, None),
+        cap("gpt-5.3", &["text"], true, &["low", "medium", "high"], 400000, None),
+        cap("gpt-5.4", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 1050000, None),
+        cap("gpt-5.5", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 1050000, None),
+        cap("gpt-5.6", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 1050000, None),
+        cap("gpt-5.6-sol", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 1050000, None),
+        cap("o1", &["text", "image"], true, &[], 200000, None),
+        cap("o1-mini", &["text"], true, &[], 128000, None),
+        cap("o3", &["text", "image"], true, &[], 200000, None),
+        cap("o3-mini", &["text"], true, &[], 200000, None),
+        cap("o3-pro", &["text", "image"], true, &[], 200000, None),
+        cap("o4-mini", &["text", "image"], true, &[], 200000, None),
+        // ---- Anthropic Claude ----
+        cap("claude-3-opus", &["text", "image"], false, &[], 200000, None),
+        cap("claude-3-sonnet", &["text", "image"], false, &[], 200000, None),
+        cap("claude-3-haiku", &["text", "image"], false, &[], 200000, None),
+        cap("claude-3.5-sonnet", &["text", "image"], true, &[], 200000, None),
+        cap("claude-3.5-haiku", &["text", "image"], true, &[], 200000, None),
+        cap("claude-opus-4", &["text", "image"], true, &[], 1000000, None),
+        cap("claude-opus-4-20250514", &["text", "image"], true, &[], 1000000, None),
+        cap("claude-opus-4.5", &["text", "image"], true, &["low", "medium", "high"], 200000, None),
+        cap("claude-opus-4.6", &["text", "image"], true, &["low", "medium", "high"], 1000000, None),
+        cap("claude-opus-5", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 1000000, None),
+        cap("claude-sonnet-4", &["text", "image"], true, &[], 1000000, None),
+        cap("claude-sonnet-4-20250514", &["text", "image"], true, &[], 1000000, None),
+        cap("claude-sonnet-4.5", &["text", "image"], true, &[], 200000, None),
+        cap("claude-sonnet-4.6", &["text", "image"], true, &["low", "medium", "high"], 1000000, None),
+        cap("claude-sonnet-5", &["text", "image"], true, &["low", "medium", "high", "xhigh"], 1000000, None),
+        cap("claude-haiku-4.5", &["text", "image"], true, &[], 200000, None),
+        // ---- Google Gemini ----
+        cap("gemini-1.5-flash", &["text", "image", "audio", "video"], false, &[], 1000000, None),
+        cap("gemini-1.5-pro", &["text", "image", "audio", "video"], false, &[], 2000000, None),
+        cap("gemini-2.0-flash", &["text", "image", "audio", "video"], false, &[], 1000000, None),
+        cap("gemini-2.5-flash", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-2.5-flash-lite", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-2.5-pro", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-3", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-3-pro", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-3-pro-preview", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-3-flash-preview", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("gemini-3.6-flash", &["text"], true, &[], 1000000, None),
+        cap("gemini-3.1-flash-lite", &["text"], true, &[], 1000000, None),
+        cap("gemini-3.5-flash", &["text"], true, &[], 1000000, None),
+        cap("gemini-pro", &["text"], false, &[], 32768, None),
+        // ---- DeepSeek ----
+        cap("deepseek-chat", &["text"], false, &[], 128000, None),
+        cap("deepseek-reasoner", &["text"], true, &[], 128000, None),
+        cap("deepseek-v3", &["text"], false, &[], 128000, None),
+        cap("deepseek-v3.1", &["text"], true, &[], 128000, None),
+        cap("deepseek-v3.2", &["text"], true, &[], 128000, None),
+        cap("deepseek-v4-flash", &["text"], true, &[], 1000000, None),
+        cap("deepseek-v4-pro", &["text"], true, &[], 1000000, None),
+        cap("deepseek-v4-lite", &["text"], true, &[], 1000000, None),
+        cap("deepseek-v4-ultra", &["text"], true, &[], 1000000, None),
+        cap("us.deepseek.r1-v1", &["text"], true, &[], 128000, None),
+        // ---- Alibaba Qwen ----
+        cap("qwen-max", &["text"], false, &[], 128000, None),
+        cap("qwen3-max", &["text"], true, &[], 256000, None),
+        cap("qwen3-coder", &["text"], true, &[], 256000, None),
+        cap("qwen3-coder-480b", &["text"], true, &[], 256000, None),
+        cap("qwen3-coder-480b-a35b-instruct", &["text"], false, &[], 256000, None),
+        cap("qwen3-coder-plus", &["text"], true, &[], 1000000, None),
+        cap("qwen3-coder-flash", &["text"], true, &[], 1000000, None),
+        cap("qwen3-coder-next", &["text"], true, &[], 256000, None),
+        cap("qwen3-coder-ultra", &["text"], true, &[], 1000000, None),
+        cap("qwen3-coder-vl", &["text", "image"], true, &[], 256000, None),
+        cap("qwen3-7-max", &["text"], true, &[], 256000, None),
+        cap("qwen3-32b", &["text"], true, &[], 256000, None),
+        cap("qwen3-235b-a22b", &["text"], true, &[], 256000, None),
+        cap("qwen3.5-plus", &["text"], true, &[], 1000000, None),
+        cap("qwen3.6-flash", &["text"], true, &[], 1000000, None),
+        cap("qwen3.6-plus", &["text"], true, &[], 1000000, None),
+        cap("qwen3.7-max", &["text"], true, &[], 1000000, None),
+        cap("qwen3.7-plus", &["text", "image", "video"], true, &[], 1000000, None),
+        cap("qwen3.8-max", &["text"], true, &[], 1000000, None),
+        cap("qwq-32b", &["text"], true, &[], 128000, None),
+        cap("qwq-plus", &["text"], true, &[], 128000, None),
+        // ---- Zhipu GLM ----
+        cap("glm-4.6", &["text"], true, &[], 200000, None),
+        cap("glm-4.7", &["text"], true, &[], 200000, None),
+        cap("glm-5", &["text"], true, &[], 200000, None),
+        cap("glm-5.1", &["text"], true, &[], 200000, None),
+        cap("glm-5.2", &["text"], true, &[], 1000000, None),
+        cap("glm-5-turbo", &["text"], true, &[], 200000, None),
+        cap("glm-5.2v", &["text"], true, &[], 200000, None),
+        cap("glm-5v-turbo", &["text", "image"], true, &[], 200000, None),
+        cap("glm-4-air", &["text"], true, &[], 128000, None),
+        cap("glm-4-flash", &["text"], false, &[], 128000, None),
+        // ---- MiniMax ----
+        cap("minimax-m2", &["text"], true, &[], 200000, None),
+        cap("minimax-m2.1", &["text"], true, &[], 200000, None),
+        cap("minimax-m2.5", &["text"], true, &[], 192000, None),
+        cap("minimax-m2.7", &["text"], true, &[], 200000, None),
+        cap("minimax-m2.7-highspeed", &["text"], true, &[], 200000, None),
+        cap("minimax-m2.7-vision", &["text"], true, &[], 200000, None),
+        cap("minimax-m3", &["text", "image"], true, &[], 1000000, None),
+        // ---- StepFun (阶跃星辰) ----
+        cap("step-1o-turbo-vision", &["text", "image", "video"], false, &[], 32000, None),
+        cap("step-2x-large", &["text", "image"], false, &[], 0, Some(&["image"])),
+        cap("step-3.5-flash", &["text"], true, &[], 256000, None),
+        cap("step-3.5-flash-2603", &["text"], true, &[], 256000, None),
+        cap("step-3.5-flash-vision", &["text", "image"], true, &[], 256000, None),
+        cap("step-3.7-flash", &["text", "image", "video"], true, &["low", "medium", "high"], 256000, None),
+        cap("step-gui", &["text"], true, &[], 256000, None),
+        cap("step-overture-preview", &["text"], true, &[], 256000, None),
+        // ---- xAI Grok ----
+        cap("grok-3", &["text", "image"], true, &[], 131072, None),
+        cap("grok-3-mini", &["text"], true, &[], 131072, None),
+        cap("grok-4", &["text", "image"], true, &[], 1048576, None),
+        cap("grok-4-fast", &["text", "image"], true, &[], 1048576, None),
+        cap("grok-4.3", &["text"], true, &[], 1000000, None),
+        cap("grok-4.5", &["text"], true, &[], 1000000, None),
+        cap("grok-4.20-0309-reasoning", &["text"], true, &[], 1000000, None),
+        cap("grok-4.20-0309-non-reasoning", &["text"], false, &[], 1000000, None),
+        cap("grok-4-1-fast-reasoning", &["text"], true, &[], 1000000, None),
+        cap("grok-4-1-fast-non-reasoning", &["text"], false, &[], 1000000, None),
+        cap("grok-code-fast-1", &["text"], true, &[], 256000, None),
+        // ---- Moonshot/Kimi ----
+        cap("kimi-k2", &["text", "image"], true, &[], 128000, None),
+        cap("kimi-k2-0905", &["text", "image"], true, &[], 128000, None),
+        cap("kimi-k2.5", &["text", "image"], true, &[], 256000, None),
+        cap("kimi-k2.6", &["text", "image", "video"], true, &[], 262144, None),
+        cap("kimi-k2.7-code", &["text", "image", "video"], true, &[], 262144, None),
+        cap("kimi-k2.7-code-highspeed", &["text", "image", "video"], true, &[], 262144, None),
+        cap("kimi-k3", &["text", "image"], true, &["low", "high"], 1048576, None),
+        cap("kimi-for-coding", &["text"], true, &[], 128000, None),
+        cap("kimi-k2-thinking", &["text", "image"], true, &[], 256000, None),
+        cap("kimi-k2-turbo", &["text"], true, &[], 128000, None),
+        // ---- Mistral ----
+        cap("mistral-large-3-2512", &["text", "image"], true, &[], 131072, None),
+        cap("mistral-medium-3.1", &["text"], true, &[], 131072, None),
+        cap("mistral-medium-3.5", &["text"], true, &[], 131072, None),
+        cap("mistral-small-3.2-24b", &["text", "image"], true, &[], 128000, None),
+        cap("mistral-small-4", &["text"], true, &[], 131072, None),
+        cap("codestral-2508", &["text"], false, &[], 256000, None),
+        cap("devstral-medium", &["text"], false, &[], 128000, None),
+        cap("devstral-small-2-2512", &["text"], true, &[], 128000, None),
+        cap("magistral-medium", &["text"], true, &[], 128000, None),
+        cap("magistral-small", &["text"], true, &[], 128000, None),
+        // ---- ByteDance Doubao ----
+        cap("doubao-seed-2-0-code", &["text", "image"], true, &[], 256000, None),
+        cap("doubao-seed-2-0-lite", &["text", "image"], true, &[], 256000, None),
+        cap("doubao-seed-2-0-mini", &["text", "image"], true, &[], 256000, None),
+        cap("doubao-seed-2-0-pro", &["text", "image"], true, &[], 256000, None),
+        cap("doubao-seed-2-1-pro", &["text"], true, &[], 256000, None),
+        cap("doubao-seed-2-1-turbo", &["text"], true, &[], 256000, None),
+        cap("doubao-seed-1-6", &["text", "image"], true, &[], 256000, None),
+        // ---- Tencent Hunyuan ----
+        cap("hunyuan-hy3", &["text"], true, &[], 200000, None),
+        cap("hy3", &["text"], true, &[], 200000, None),
+        cap("hy3-preview", &["text"], true, &[], 200000, None),
+        // ---- Coding-agent aggregators / special names ----
+        cap("ark-code-latest", &["text"], true, &[], 256000, None),
+        cap("qianfan-code-latest", &["text"], true, &[], 200000, None),
+        cap("kat-coder", &["text"], true, &[], 256000, None),
+        cap("kat-coder-pro", &["text"], true, &[], 256000, None),
+        cap("kat-coder-pro-v1", &["text"], true, &[], 256000, None),
+        cap("kat-coder-pro-v2", &["text"], true, &[], 256000, None),
+        cap("ling-2.5-1t", &["text"], true, &[], 256000, None),
+        cap("ling-2.6-1t", &["text"], true, &[], 1000000, None),
+        cap("longcat-2.0", &["text"], true, &[], 1000000, None),
+        cap("longcat-flash-chat", &["text"], true, &[], 256000, None),
+        cap("mimo-v2.5", &["text", "image", "audio", "video"], true, &[], 1000000, None),
+        cap("mimo-v2.5-pro", &["text", "image"], true, &[], 1000000, None),
+        cap("mimo-v2-flash", &["text", "image"], true, &[], 1000000, None),
+        cap("mimo-v2-pro", &["text", "image"], true, &[], 1000000, None),
+    ]
+});
 
 /// Returns the full model capability dictionary.
 pub fn get_model_capabilities() -> &'static [ModelCapabilities] {
-    MODEL_CAPABILITIES
+    &MODEL_CAPABILITIES
 }
 
 /// Looks up capabilities for a model by normalized name/tail.
+///
+/// Same name = same model regardless of URL/provider. Matching prefers an exact
+/// tail match (after the last `/`), then falls back to a prefix-of-tail match so
+/// namespaced variants (`gpt-5.4-pro`, `claude-sonnet-4-20250514`) resolve to
+/// the base entry.
 pub fn get_model_capability_for_name(model_name: &str) -> Option<&'static ModelCapabilities> {
     let normalized = model_name.to_lowercase();
     let tail = normalized.rsplit('/').next().unwrap_or(&normalized);
@@ -425,12 +419,16 @@ pub async fn execute_eyes_inference(
     let endpoint = match app_type {
         AppType::Claude | AppType::ClaudeDesktop => "/v1/messages",
         AppType::Codex | AppType::GrokBuild => "/v1/chat/completions",
-        AppType::Gemini => {
-            return Err(ProxyError::ConfigError(
-                "Gemini eyes inference not yet implemented".to_string(),
-            ));
-        }
+        AppType::Gemini => "/v1beta/models/{model}:generateContent",
         _ => "/v1/chat/completions",
+    };
+
+    // Gemini uses a dedicated generateContent endpoint with the model embedded
+    // in the path; inject the model id before building the URL.
+    let endpoint = if app_type == &AppType::Gemini {
+        endpoint.replace("{model}", eyes_model)
+    } else {
+        endpoint.to_string()
     };
 
     let url = adapter.build_url(&effective_base_url, endpoint);
@@ -441,9 +439,12 @@ pub async fn execute_eyes_inference(
         .ok_or_else(|| ProxyError::AuthError("Eyes provider has no auth configured".to_string()))?;
     let auth_headers = adapter.get_auth_headers(&auth)?;
 
-    // Build request body with eyes model
+    // Build request body with eyes model. For Gemini the model lives in the
+    // endpoint path; for OpenAI-style bodies we set `model` explicitly.
     let mut eyes_body = body.clone();
-    eyes_body["model"] = Value::String(eyes_model.to_string());
+    if app_type != &AppType::Gemini {
+        eyes_body["model"] = Value::String(eyes_model.to_string());
+    }
 
     // Apply adapter transform if needed
     let transformed_body = if adapter.needs_transform(eyes_provider) {

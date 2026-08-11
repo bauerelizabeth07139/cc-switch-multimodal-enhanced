@@ -211,6 +211,103 @@ impl RequestForwarder {
         true
     }
 
+    /// 多模态自动路由（跨供应商版）：当请求包含图片、视频或音频，且当前模型为
+    /// 已确认的纯文本模型时，切换到配置的多模态回退模型；若配置了回退供应商，
+    /// 则整个请求切换到该供应商（支持不同 URL / 不同 Key 的无痕切换）。
+    ///
+    /// 返回 true 表示已执行自动路由。
+    async fn apply_multimodal_provider_route(
+        &self,
+        body: &mut Value,
+        providers: &mut Vec<Provider>,
+        app_type_str: &str,
+    ) -> bool {
+        use crate::model_capabilities::{image_input_capability_from_settings, ImageInputCapability};
+        use crate::proxy::multimodal_router::is_model_multimodal;
+
+        if !self.multimodal_config.enabled {
+            return false;
+        }
+
+        if !super::media_sanitizer::contains_media_blocks(body) {
+            return false;
+        }
+
+        let model = body
+            .get("model")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or("");
+
+        if model.is_empty() || is_model_multimodal(model) {
+            return false;
+        }
+
+        // 保守策略：仅对「已确认纯文本」的模型进行路由，避免误伤未知模型
+        let text_only = providers.iter().any(|provider| {
+            image_input_capability_from_settings(
+                &provider.settings_config,
+                model,
+                true, // use_confirmed_registry
+            ) == ImageInputCapability::Unsupported
+        });
+        if !text_only {
+            return false;
+        }
+
+        let fallback_model = &self.multimodal_config.fallback_model;
+        if fallback_model.is_empty() {
+            return false;
+        }
+
+        body["model"] = Value::String(fallback_model.clone());
+
+        let fallback_provider_id = &self.multimodal_config.fallback_provider_id;
+        if !fallback_provider_id.is_empty() {
+            match self
+                .router
+                .get_provider_by_id(fallback_provider_id, app_type_str)
+                .await
+            {
+                Ok(Some(fallback_provider)) => {
+                    *providers = vec![fallback_provider.clone()];
+                    log::info!(
+                        "[Multimodal] Auto-routed provider='{}' model='{}' → provider='{}' model='{}'",
+                        providers
+                            .first()
+                            .map(|p| p.name.as_str())
+                            .unwrap_or(""),
+                        model,
+                        fallback_provider.name,
+                        fallback_model
+                    );
+                }
+                Ok(None) => {
+                    log::warn!(
+                        "[Multimodal] Fallback provider '{}' not found, keeping current provider with model '{}'",
+                        fallback_provider_id,
+                        fallback_model
+                    );
+                }
+                Err(e) => {
+                    log::warn!(
+                        "[Multimodal] Failed to look up fallback provider '{}': {e}, keeping current provider with model '{}'",
+                        fallback_provider_id,
+                        fallback_model
+                    );
+                }
+            }
+        } else {
+            log::info!(
+                "[Multimodal] Auto-routed text-only model '{}' to multimodal model '{}' on same provider",
+                model,
+                fallback_model
+            );
+        }
+
+        true
+    }
+
     /// 预防式 media 降级：发送前对 text-only 模型把图片块替换为标记。
     ///
     /// 受 `enabled && request_media_fallback` 管辖；其中"启发式模型名单预测"
@@ -478,6 +575,11 @@ impl RequestForwarder {
 
         let mut body = body;
         let mut providers = providers;
+
+        // --- 多模态自动路由（Feature 1）：跨供应商无痕切换 ---
+        // 先于复合模型绑定处理，仅在媒体输入 + 纯文本模型 + 启用时触发。
+        self.apply_multimodal_provider_route(&mut body, &mut providers, app_type_str)
+            .await;
 
         // --- 复合模型绑定处理（Feature 2）---
         if self.multimodal_config.enabled {
